@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>バスチャイム生成ツール</title>
+  <style>
+    :root {
+      --panel: rgba(255, 250, 240, 0.9);
+      --panel-strong: rgba(255, 247, 230, 0.98);
+      --line: rgba(92, 71, 46, 0.14);
+      --text: #2a2219;
+      --muted: #736251;
+      --accent-strong: #8f431f;
+      --shadow: 0 24px 60px rgba(74, 48, 24, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 223, 170, 0.75), transparent 36%),
+        radial-gradient(circle at bottom right, rgba(200, 222, 206, 0.78), transparent 28%),
+        linear-gradient(145deg, #f9f4ea 0%, #efe4d1 46%, #e6dbc8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 24px 24px;
+    }
+
+    .shell {
+      width: min(980px, 100%);
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-strong) 100%);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(14px);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .controls, .summary {
+      padding: 24px 28px 30px;
+    }
+
+    .summary {
+      border-left: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 253, 248, 0.86), rgba(249, 242, 230, 0.92));
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      font-size: 15px;
+      color: var(--accent-strong);
+      letter-spacing: 0.06em;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4a3b2c;
+    }
+
+    .field-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .field-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .bulk-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .field-tools select {
+      width: auto;
+      min-width: 140px;
+    }
+
+    .field small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .code-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 108px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    select, input[type="range"] { width: 100%; }
+
+    select {
+      appearance: none;
+      border: 1px solid rgba(92, 71, 46, 0.16);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(250, 244, 234, 0.98));
+    }
+
+    input[type="range"] {
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(184, 106, 47, 0.22), rgba(95, 139, 117, 0.28));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #d38a4c, #9a4f25);
+      border: 2px solid rgba(255, 247, 237, 0.95);
+      box-shadow: 0 6px 18px rgba(154, 79, 37, 0.28);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #d38a4c, #9a4f25);
+      border: 2px solid rgba(255, 247, 237, 0.95);
+      box-shadow: 0 6px 18px rgba(154, 79, 37, 0.28);
+      cursor: pointer;
+    }
+
+    .value-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 18px;
+      padding: 15px 22px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 150ms ease, opacity 150ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      color: #fff8f1;
+      background: linear-gradient(135deg, #c77233, #8f431f);
+      box-shadow: 0 16px 28px rgba(143, 67, 31, 0.26);
+    }
+
+    .secondary {
+      color: #3d3024;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 233, 219, 0.98));
+      border: 1px solid rgba(92, 71, 46, 0.12);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+    }
+
+    .icon-button {
+      min-width: 48px;
+      padding: 10px 14px;
+      line-height: 1;
+      font-size: 18px;
+    }
+
+    .floating-play {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 22px;
+      background: rgba(255, 248, 238, 0.92);
+      border: 1px solid rgba(92, 71, 46, 0.14);
+      box-shadow: 0 18px 40px rgba(74, 48, 24, 0.18);
+      backdrop-filter: blur(14px);
+      cursor: grab;
+      user-select: none;
+    }
+
+    .floating-play.dragging {
+      cursor: grabbing;
+    }
+
+    .floating-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .floating-play .mini-grid {
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      margin-top: 0;
+    }
+
+    .floating-play .mini {
+      padding: 12px 14px;
+      background: rgba(255, 252, 247, 0.9);
+    }
+
+    .floating-play .mini .label {
+      display: none;
+    }
+
+    .floating-play .mini .value {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .loop-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #4a3b2c;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .loop-toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: #9a4f25;
+    }
+
+    .status-bar {
+      display: none;
+    }
+
+    .shell > h1,
+    .shell > .lead,
+    .hero,
+    .summary {
+      display: none;
+    }
+
+    .status {
+      position: static;
+      width: auto;
+      padding: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      transform: none;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 10px;
+      opacity: 0.82;
+      margin: 0;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 0;
+    }
+
+    .mini {
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255, 249, 240, 0.92);
+      border: 1px solid rgba(92, 71, 46, 0.1);
+    }
+
+    .mini .label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .mini .value {
+      display: block;
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 820px) {
+      .content { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 14px; }
+      .controls { padding-left: 18px; padding-right: 18px; }
+      .actions { flex-direction: column; }
+      button { width: 100%; }
+      .mini-grid { grid-template-columns: 1fr; }
+      .floating-play {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+      }
+      .floating-controls {
+        justify-content: space-between;
+      }
+      .floating-play .mini-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .floating-play .primary {
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="status" class="status-bar">最初の再生で AudioContext を開始します。スマホでは再生ボタンを押して音声を有効化してください。</div>
+  <main class="shell">
+      <h1>バスチャイム生成ツール</h1>
+      <p class="lead">案内音らしい上品さを保ちながら、音階と和音まで調整できるベル系チャイムをブラウザだけで生成します。再生もWAV書き出しも、同じ音源ロジックで処理します。</p>
+    </section>
+
+    <section class="content">
+      <div class="controls">
+        <h2 class="section-title">設定</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="pattern">チャイム種類</label>
+            <select id="pattern">
+              <option value="2tone">2点チャイム</option>
+              <option value="3tone">3点チャイム</option>
+              <option value="4tone">4点チャイム</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="preset">音色プリセット</label>
+            <select id="preset">
+              <option value="standard">Standard Bell</option>
+              <option value="soft">Soft Chime</option>
+              <option value="bright">Bright Synth Chime</option>
+              <option value="aircraft">Aircraft Cabin</option>
+              <option value="musicbox">Music Box</option>
+              <option value="crystal">Crystal Guide</option>
+              <option value="velvet">Velvet Pad Chime</option>
+              <option value="epiano">Warm EP</option>
+              <option value="organ">Guide Organ</option>
+              <option value="analogpad">Analog Pad</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <label for="chordStep1">コード進行</label>
+              <div class="field-tools">
+                <select id="progressionPreset"></select>
+                <button id="randomButton" class="secondary icon-button" type="button" aria-label="コードをランダムに変更">🎲</button>
+                <div class="bulk-row">
+                  <select id="globalOctave"></select>
+                </div>
+              </div>
+            </div>
+            <div class="code-row">
+              <select id="chordStep1"></select>
+              <select id="octaveStep1"></select>
+            </div>
+            <div class="code-row">
+              <select id="chordStep2"></select>
+              <select id="octaveStep2"></select>
+            </div>
+            <div class="code-row">
+              <select id="chordStep3"></select>
+              <select id="octaveStep3"></select>
+            </div>
+            <div class="code-row">
+              <select id="chordStep4"></select>
+              <select id="octaveStep4"></select>
+            </div>
+            <small>各音に対して、コード名で和声を選べます。キーは固定で、コードだけが進行します。</small>
+          </div>
+
+          <div class="field">
+            <label for="voiceMode">ボイス数</label>
+            <select id="voiceMode">
+              <option value="1">単音</option>
+              <option value="2">2ボイス</option>
+              <option value="3">3ボイス</option>
+              <option value="4">4ボイス</option>
+            </select>
+            <small>選んだコードのルート音を基準に、上の構成音を重ねます。</small>
+          </div>
+
+          <div class="field">
+            <label for="pitch">Pitch</label>
+            <input id="pitch" type="range" min="280" max="880" step="1" value="540">
+            <div class="value-row">
+              <strong id="pitchValue">540 Hz</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="tempo">Tempo</label>
+            <input id="tempo" type="range" min="90" max="620" step="5" value="350">
+            <div class="value-row">
+              <strong id="tempoValue">167 BPM</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="volume">Volume</label>
+            <input id="volume" type="range" min="0.2" max="1" step="0.01" value="0.74">
+            <div class="value-row">
+              <strong id="volumeValue">74%</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reverb">Reverb</label>
+            <input id="reverb" type="range" min="0" max="150" step="1" value="100">
+            <div class="value-row">
+              <strong id="reverbValue">100%</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="lowEq">Low EQ</label>
+            <input id="lowEq" type="range" min="-12" max="12" step="1" value="0">
+            <div class="value-row">
+              <strong id="lowEqValue">0 dB</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="highEq">High EQ</label>
+            <input id="highEq" type="range" min="-12" max="12" step="1" value="2">
+            <div class="value-row">
+              <strong id="highEqValue">2 dB</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="downloadButton" class="secondary">WAVダウンロード</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="summary">
+        <h2 class="section-title">現在の設定</h2>
+        <div class="card">
+          <h3 id="presetName" class="preset-name">Standard Bell</h3>
+          <p id="presetDescription" class="preset-copy"></p>
+        </div>
+
+        <div class="mini-grid">
+          <div class="mini">
+            <span class="label">チャイム</span>
+            <span id="patternSummary" class="value">3点</span>
+          </div>
+          <div class="mini">
+            <span class="label">音階</span>
+            <span class="value">メジャー固定</span>
+          </div>
+          <div class="mini">
+            <span class="label">和音</span>
+            <span id="chordSummary" class="value">C → C/E → G/B</span>
+          </div>
+          <div class="mini">
+            <span class="label">ボイス数</span>
+            <span id="voiceSummary" class="value">単音</span>
+          </div>
+          <div class="mini">
+            <span class="label">基準周波数</span>
+            <span id="pitchSummary" class="value">540 Hz</span>
+          </div>
+          <div class="mini">
+            <span class="label">テンポ</span>
+            <span id="tempoSummary" class="value">167 BPM</span>
+          </div>
+          <div class="mini">
+            <span class="label">音量</span>
+            <span id="volumeSummary" class="value">74%</span>
+          </div>
+          <div class="mini">
+            <span class="label">響き</span>
+            <span id="reverbSummary" class="value">100%</span>
+          </div>
+          <div class="mini">
+            <span class="label">EQ</span>
+            <span id="eqSummary" class="value">低 0 / 高 +2</span>
+          </div>
+        </div>
+
+        <p id="status" class="status">最初の再生で AudioContext を開始します。スマホでは再生ボタンを押して音声を有効化してください。</p>
+      </aside>
+    </section>
+  </main>
+
+  <div class="floating-play">
+    <div class="floating-controls">
+    <button id="playButton" class="primary" type="button">再生</button>
+    <label class="loop-toggle" for="loopToggle">
+      <input id="loopToggle" type="checkbox">
+      <span>ループ</span>
+    </label>
+    </div>
+  </div>
+
+  <script>
+    const PRESETS = {
+      standard: {
+        label: "Standard Bell",
+        description: "標準的で上品なベル音です。芯のある基音に素直な倍音を重ね、公共交通らしい落ち着きと明瞭さを両立します。",
+        attack: 0.012, attackLift: 1.03, peak: 0.76, sustain: 0.00018,
+        decay1: 0.34, decay2: 1.38, release: 1.22,
+        bodyLowpass: 5000, bodyLowpassEnd: 1600, bodyHighpass: 210, bodyQ: 0.58,
+        shaperDrive: 1.08, dryLevel: 1,
+        shimmerRatio: 4.02, shimmerWave: "sine", shimmerGain: 0.045, shimmerDecay: 0.6, shimmerDetune: 3,
+        transientWave: "triangle", attackNoise: 0.022, attackTone: 2700, attackQ: 1, attackGain: 0.036,
+        echoMix: 0.23, echoTime: 0.106, echoFeedback: 0.26, preDelay: 0.028,
+        reverbLowpass: 3400, reverbHighpass: 240, presence: 1.1,
+        tapGains: [0.076, 0.056, 0.038], tapRatios: [0.74, 1.22, 1.68], stereoWidth: 0.14,
+        partials: [
+          { ratio: 1.0, gain: 0.52, mainWave: "triangle", sideWave: "sine", spread: 5.2, pan: -0.08 },
+          { ratio: 2.0, gain: 0.22, mainWave: "sine", sideWave: "triangle", spread: 6.5, pan: 0.02 },
+          { ratio: 3.0, gain: 0.11, mainWave: "triangle", sideWave: "sine", spread: 7.2, pan: 0.09 },
+          { ratio: 4.12, gain: 0.04, mainWave: "sine", sideWave: "sine", spread: 4.8, pan: 0.12 }
+        ]
+      },
+      soft: {
+        label: "Soft Chime",
+        description: "丸く柔らかく、刺激の少ない音です。高域をやさしく整え、余韻をなめらかに伸ばして穏やかな案内音に寄せています。",
+        attack: 0.02, attackLift: 1.018, peak: 0.7, sustain: 0.0002,
+        decay1: 0.52, decay2: 1.86, release: 1.46,
+        bodyLowpass: 3600, bodyLowpassEnd: 1180, bodyHighpass: 170, bodyQ: 0.42,
+        shaperDrive: 1.02, dryLevel: 0.96,
+        shimmerRatio: 3.92, shimmerWave: "triangle", shimmerGain: 0.024, shimmerDecay: 0.88, shimmerDetune: 1.5,
+        transientWave: "sine", attackNoise: 0.03, attackTone: 2100, attackQ: 0.78, attackGain: 0.018,
+        echoMix: 0.2, echoTime: 0.136, echoFeedback: 0.21, preDelay: 0.04,
+        reverbLowpass: 2600, reverbHighpass: 190, presence: 0.5,
+        tapGains: [0.05, 0.035, 0.02], tapRatios: [0.78, 1.3, 1.9], stereoWidth: 0.1,
+        partials: [
+          { ratio: 1.0, gain: 0.58, mainWave: "sine", sideWave: "sine", spread: 3.4, pan: -0.04 },
+          { ratio: 2.0, gain: 0.14, mainWave: "triangle", sideWave: "sine", spread: 4.2, pan: 0.03 },
+          { ratio: 2.96, gain: 0.06, mainWave: "sine", sideWave: "sine", spread: 4.9, pan: 0.08 },
+          { ratio: 4.0, gain: 0.02, mainWave: "sine", sideWave: "triangle", spread: 3.3, pan: 0.1 }
+        ]
+      },
+      aircraft: {
+        label: "Aircraft Cabin",
+        description: "機内案内音を思わせる、整ったアタックと短めの上品な余韻を持つチャイムです。",
+        attack: 0.011, attackLift: 1.026, peak: 0.74, sustain: 0.00016,
+        decay1: 0.26, decay2: 1.02, release: 0.9,
+        bodyLowpass: 5600, bodyLowpassEnd: 1850, bodyHighpass: 240, bodyQ: 0.66,
+        shaperDrive: 1.1, dryLevel: 1,
+        shimmerRatio: 3.98, shimmerWave: "sine", shimmerGain: 0.04, shimmerDecay: 0.42, shimmerDetune: 2,
+        transientWave: "triangle", attackNoise: 0.014, attackTone: 3100, attackQ: 1.18, attackGain: 0.03,
+        echoMix: 0.16, echoTime: 0.084, echoFeedback: 0.17, preDelay: 0.016,
+        reverbLowpass: 3000, reverbHighpass: 260, presence: 0.8,
+        tapGains: [0.05, 0.03, 0.018], tapRatios: [0.62, 0.96, 1.24], stereoWidth: 0.11,
+        partials: [
+          { ratio: 1.0, gain: 0.54, mainWave: "triangle", sideWave: "sine", spread: 4.2, pan: -0.05 },
+          { ratio: 2.0, gain: 0.18, mainWave: "sine", sideWave: "triangle", spread: 5.1, pan: 0.02 },
+          { ratio: 3.0, gain: 0.08, mainWave: "sine", sideWave: "sine", spread: 5.9, pan: 0.08 }
+        ]
+      },
+      musicbox: {
+        label: "Music Box",
+        description: "オルゴール風の粒立ちを持ちながら、案内音として破綻しないよう高域を整えた音色です。",
+        attack: 0.008, attackLift: 1.055, peak: 0.7, sustain: 0.00012,
+        decay1: 0.22, decay2: 0.92, release: 0.82,
+        bodyLowpass: 7200, bodyLowpassEnd: 2400, bodyHighpass: 280, bodyQ: 0.76,
+        shaperDrive: 1.06, dryLevel: 1,
+        shimmerRatio: 4.98, shimmerWave: "triangle", shimmerGain: 0.075, shimmerDecay: 0.34, shimmerDetune: 6,
+        transientWave: "triangle", attackNoise: 0.012, attackTone: 3600, attackQ: 1.28, attackGain: 0.032,
+        echoMix: 0.18, echoTime: 0.126, echoFeedback: 0.19, preDelay: 0.024,
+        reverbLowpass: 4200, reverbHighpass: 320, presence: 2.1,
+        tapGains: [0.058, 0.038, 0.022], tapRatios: [0.74, 1.14, 1.52], stereoWidth: 0.15,
+        partials: [
+          { ratio: 1.0, gain: 0.42, mainWave: "triangle", sideWave: "triangle", spread: 5.6, pan: -0.06 },
+          { ratio: 2.0, gain: 0.24, mainWave: "sine", sideWave: "triangle", spread: 6.5, pan: 0.02 },
+          { ratio: 4.0, gain: 0.11, mainWave: "sine", sideWave: "sine", spread: 7.2, pan: 0.08 },
+          { ratio: 6.0, gain: 0.04, mainWave: "triangle", sideWave: "sine", spread: 8.0, pan: 0.12 }
+        ]
+      },
+      crystal: {
+        label: "Crystal Guide",
+        description: "透明感を前に出したガラスベル系の案内音です。明るいが刺さりすぎない印象に寄せています。",
+        attack: 0.01, attackLift: 1.042, peak: 0.77, sustain: 0.00015,
+        decay1: 0.28, decay2: 1.24, release: 1.08,
+        bodyLowpass: 6800, bodyLowpassEnd: 2100, bodyHighpass: 250, bodyQ: 0.72,
+        shaperDrive: 1.14, dryLevel: 1,
+        shimmerRatio: 4.34, shimmerWave: "sine", shimmerGain: 0.082, shimmerDecay: 0.5, shimmerDetune: 5,
+        transientWave: "triangle", attackNoise: 0.015, attackTone: 3400, attackQ: 1.2, attackGain: 0.04,
+        echoMix: 0.24, echoTime: 0.098, echoFeedback: 0.25, preDelay: 0.02,
+        reverbLowpass: 4100, reverbHighpass: 290, presence: 1.9,
+        tapGains: [0.08, 0.058, 0.034], tapRatios: [0.7, 1.08, 1.42], stereoWidth: 0.16,
+        partials: [
+          { ratio: 1.0, gain: 0.45, mainWave: "triangle", sideWave: "sine", spread: 6.0, pan: -0.08 },
+          { ratio: 2.0, gain: 0.24, mainWave: "sine", sideWave: "triangle", spread: 7.2, pan: 0.02 },
+          { ratio: 3.0, gain: 0.14, mainWave: "sine", sideWave: "sine", spread: 8.2, pan: 0.08 },
+          { ratio: 5.0, gain: 0.05, mainWave: "triangle", sideWave: "sine", spread: 8.8, pan: 0.14 }
+        ]
+      },
+      velvet: {
+        label: "Velvet Pad Chime",
+        description: "少しパッド感を混ぜた、柔らかく包み込むタイプのチャイムです。長めの響きでも耳に痛くなりません。",
+        attack: 0.022, attackLift: 1.014, peak: 0.68, sustain: 0.00022,
+        decay1: 0.6, decay2: 1.98, release: 1.62,
+        bodyLowpass: 3400, bodyLowpassEnd: 1100, bodyHighpass: 150, bodyQ: 0.38,
+        shaperDrive: 1.0, dryLevel: 0.94,
+        shimmerRatio: 3.6, shimmerWave: "sine", shimmerGain: 0.018, shimmerDecay: 0.92, shimmerDetune: 1,
+        transientWave: "sine", attackNoise: 0.028, attackTone: 1900, attackQ: 0.72, attackGain: 0.012,
+        echoMix: 0.3, echoTime: 0.152, echoFeedback: 0.28, preDelay: 0.044,
+        reverbLowpass: 2400, reverbHighpass: 160, presence: 0.3,
+        tapGains: [0.06, 0.044, 0.03], tapRatios: [0.82, 1.34, 1.96], stereoWidth: 0.12,
+        partials: [
+          { ratio: 1.0, gain: 0.62, mainWave: "sine", sideWave: "triangle", spread: 3.0, pan: -0.03 },
+          { ratio: 2.0, gain: 0.12, mainWave: "sine", sideWave: "sine", spread: 3.8, pan: 0.02 },
+          { ratio: 3.0, gain: 0.04, mainWave: "triangle", sideWave: "sine", spread: 4.2, pan: 0.08 }
+        ]
+      },
+      epiano: {
+        label: "Warm EP",
+        description: "ベル感を抑えて、やわらかなエレクトリックピアノ寄りに寄せた音色です。和音の雰囲気を自然に聴かせやすいよう、中域を少し前に出しています。",
+        attack: 0.014, attackLift: 1.02, peak: 0.72, sustain: 0.00018,
+        decay1: 0.42, decay2: 1.24, release: 1.12,
+        bodyLowpass: 4200, bodyLowpassEnd: 1450, bodyHighpass: 180, bodyQ: 0.48,
+        shaperDrive: 1.05, dryLevel: 1,
+        shimmerRatio: 2.98, shimmerWave: "sine", shimmerGain: 0.018, shimmerDecay: 0.48, shimmerDetune: 1,
+        transientWave: "triangle", attackNoise: 0.018, attackTone: 2200, attackQ: 0.9, attackGain: 0.014,
+        echoMix: 0.17, echoTime: 0.118, echoFeedback: 0.18, preDelay: 0.022,
+        reverbLowpass: 2800, reverbHighpass: 180, presence: 0.45,
+        tapGains: [0.045, 0.03, 0.018], tapRatios: [0.74, 1.18, 1.58], stereoWidth: 0.11,
+        partials: [
+          { ratio: 1.0, gain: 0.56, mainWave: "triangle", sideWave: "sine", spread: 3.8, pan: -0.04 },
+          { ratio: 2.0, gain: 0.16, mainWave: "sine", sideWave: "triangle", spread: 4.6, pan: 0.02 },
+          { ratio: 3.0, gain: 0.05, mainWave: "sine", sideWave: "sine", spread: 5.2, pan: 0.08 }
+        ]
+      },
+      organ: {
+        label: "Guide Organ",
+        description: "チャイムというより、小さな案内オルガンのような落ち着いた音色です。アタックを穏やかにして、コードの厚みを聴かせる方向にしています。",
+        attack: 0.026, attackLift: 1.008, peak: 0.66, sustain: 0.00028,
+        decay1: 0.72, decay2: 1.86, release: 1.48,
+        bodyLowpass: 3000, bodyLowpassEnd: 980, bodyHighpass: 130, bodyQ: 0.32,
+        shaperDrive: 1.0, dryLevel: 0.97,
+        shimmerRatio: 2.0, shimmerWave: "sine", shimmerGain: 0.008, shimmerDecay: 0.62, shimmerDetune: 0,
+        transientWave: "sine", attackNoise: 0.03, attackTone: 1500, attackQ: 0.65, attackGain: 0.006,
+        echoMix: 0.14, echoTime: 0.144, echoFeedback: 0.16, preDelay: 0.03,
+        reverbLowpass: 2200, reverbHighpass: 140, presence: 0.2,
+        tapGains: [0.038, 0.026, 0.014], tapRatios: [0.86, 1.3, 1.82], stereoWidth: 0.08,
+        partials: [
+          { ratio: 1.0, gain: 0.5, mainWave: "sine", sideWave: "sine", spread: 2.6, pan: -0.02 },
+          { ratio: 2.0, gain: 0.24, mainWave: "sine", sideWave: "triangle", spread: 3.2, pan: 0.02 },
+          { ratio: 3.0, gain: 0.14, mainWave: "triangle", sideWave: "sine", spread: 3.8, pan: 0.05 },
+          { ratio: 4.0, gain: 0.06, mainWave: "sine", sideWave: "sine", spread: 4.2, pan: 0.1 }
+        ]
+      },
+      analogpad: {
+        label: "Analog Pad",
+        description: "ベルらしさをかなり減らした、シンセパッド寄りの音色です。やわらかな立ち上がりと広がる余韻で、コード進行そのものの印象を前に出します。",
+        attack: 0.034, attackLift: 1.012, peak: 0.64, sustain: 0.00024,
+        decay1: 0.84, decay2: 2.18, release: 1.74,
+        bodyLowpass: 2600, bodyLowpassEnd: 880, bodyHighpass: 120, bodyQ: 0.28,
+        shaperDrive: 0.98, dryLevel: 0.95,
+        shimmerRatio: 2.5, shimmerWave: "triangle", shimmerGain: 0.01, shimmerDecay: 0.86, shimmerDetune: 1,
+        transientWave: "sine", attackNoise: 0.036, attackTone: 1400, attackQ: 0.58, attackGain: 0.005,
+        echoMix: 0.26, echoTime: 0.162, echoFeedback: 0.24, preDelay: 0.038,
+        reverbLowpass: 2100, reverbHighpass: 120, presence: 0.1,
+        tapGains: [0.05, 0.038, 0.024], tapRatios: [0.92, 1.42, 1.96], stereoWidth: 0.14,
+        partials: [
+          { ratio: 1.0, gain: 0.58, mainWave: "sine", sideWave: "triangle", spread: 2.8, pan: -0.03 },
+          { ratio: 2.0, gain: 0.11, mainWave: "triangle", sideWave: "sine", spread: 3.4, pan: 0.02 },
+          { ratio: 3.0, gain: 0.04, mainWave: "sine", sideWave: "sine", spread: 4.0, pan: 0.08 }
+        ]
+      },
+      bright: {
+        label: "Bright Synth Chime",
+        description: "やや華やかで存在感のある音です。明るい倍音と少し広いデチューンで、最初の一音に印象を残しながらも品位を保ちます。",
+        attack: 0.009, attackLift: 1.045, peak: 0.8, sustain: 0.00014,
+        decay1: 0.28, decay2: 1.2, release: 1.02,
+        bodyLowpass: 6500, bodyLowpassEnd: 2000, bodyHighpass: 240, bodyQ: 0.7,
+        shaperDrive: 1.16, dryLevel: 1,
+        shimmerRatio: 4.18, shimmerWave: "sine", shimmerGain: 0.07, shimmerDecay: 0.52, shimmerDetune: 5,
+        transientWave: "triangle", attackNoise: 0.017, attackTone: 3350, attackQ: 1.25, attackGain: 0.046,
+        echoMix: 0.28, echoTime: 0.092, echoFeedback: 0.3, preDelay: 0.022,
+        reverbLowpass: 4300, reverbHighpass: 280, presence: 1.9,
+        tapGains: [0.09, 0.07, 0.048], tapRatios: [0.68, 1.08, 1.46], stereoWidth: 0.18,
+        partials: [
+          { ratio: 1.0, gain: 0.46, mainWave: "triangle", sideWave: "triangle", spread: 6.8, pan: -0.1 },
+          { ratio: 2.0, gain: 0.28, mainWave: "triangle", sideWave: "square", spread: 8.8, pan: 0.02 },
+          { ratio: 3.02, gain: 0.17, mainWave: "sine", sideWave: "triangle", spread: 10.5, pan: 0.1 },
+          { ratio: 4.26, gain: 0.07, mainWave: "sine", sideWave: "square", spread: 6.2, pan: 0.16 }
+        ]
+      }
+    };
+
+    const PATTERNS = {
+      "2tone": { label: "2点", degrees: [0, 4] },
+      "3tone": { label: "3点", degrees: [0, 2, 4] },
+      "4tone": { label: "4点", degrees: [0, 1, 3, 5] }
+    };
+
+    const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+
+    const CHORD_LIBRARY = {
+      "C": { label: "C", tones: [0, 2, 4] },
+      "Cmaj7": { label: "Cmaj7", tones: [0, 2, 4, 6] },
+      "Cadd9": { label: "Cadd9", tones: [0, 1, 2, 4] },
+      "C/E": { label: "C/E", tones: [2, 4, 7] },
+      "C/G": { label: "C/G", tones: [4, 7, 9] },
+      "Dm": { label: "Dm", tones: [1, 3, 5] },
+      "Dm7": { label: "Dm7", tones: [1, 3, 5, 7] },
+      "Dm/F": { label: "Dm/F", tones: [3, 5, 8] },
+      "Em": { label: "Em", tones: [2, 4, 6] },
+      "Em7": { label: "Em7", tones: [2, 4, 6, 8] },
+      "F": { label: "F", tones: [3, 5, 7] },
+      "Fmaj7": { label: "Fmaj7", tones: [3, 5, 7, 9] },
+      "F/C": { label: "F/C", tones: [0, 3, 5] },
+      "G": { label: "G", tones: [4, 6, 8] },
+      "G7": { label: "G7", tones: [4, 6, 8, 10] },
+      "G/B": { label: "G/B", tones: [6, 8, 11] },
+      "G/D": { label: "G/D", tones: [1, 4, 8] },
+      "Gsus4": { label: "Gsus4", tones: [4, 7, 8] },
+      "Am": { label: "Am", tones: [5, 7, 9] },
+      "Am7": { label: "Am7", tones: [5, 7, 9, 11] },
+      "Am/C": { label: "Am/C", tones: [0, 5, 9] }
+    };
+
+    const DEFAULT_PROGRESSIONS = {
+      "2tone": ["C", "Em", "C", "C"],
+      "3tone": ["C", "Em", "Gsus4"],
+      "4tone": ["C", "Em", "Gsus4", "C"]
+    };
+
+    const PROGRESSION_PRESETS = {
+      default: {
+        label: "デフォルト",
+        progressions: {
+          "2tone": { chords: ["C", "Em", "C", "C"], octaves: [0, 0, 0, 0] },
+          "3tone": { chords: ["C", "Em", "Gsus4", "C"], octaves: [0, 0, 0, 0] },
+          "4tone": { chords: ["C", "Em", "Gsus4", "C"], octaves: [0, 0, 0, 0] }
+        }
+      },
+      greeting: {
+        label: "あいさつ",
+        progressions: {
+          "2tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] },
+          "3tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] },
+          "4tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] }
+        }
+      },
+      airport: {
+        label: "飛行場",
+        progressions: {
+          "2tone": { chords: ["G", "C", "C", "C"], octaves: [0, 0, 0, 0] },
+          "3tone": { chords: ["G", "Em", "C", "C"], octaves: [0, 0, 0, 0] },
+          "4tone": { chords: ["G", "Em", "G", "C"], octaves: [0, 0, 0, 1] }
+        }
+      },
+      canon: {
+        label: "カノン",
+        progressions: {
+          "2tone": { chords: ["C", "G", "C", "C"], octaves: [0, 0, 0, 0] },
+          "3tone": { chords: ["C", "G", "Am", "C"], octaves: [0, 0, 0, 0] },
+          "4tone": { chords: ["C", "G", "Am", "Em"], octaves: [0, 0, 0, 0] }
+        }
+      },
+      royal: {
+        label: "王道",
+        progressions: {
+          "2tone": { chords: ["F", "G", "C", "C"], octaves: [0, 0, 0, 0] },
+          "3tone": { chords: ["F", "G", "Em", "C"], octaves: [0, 0, 0, 0] },
+          "4tone": { chords: ["F", "G", "Em", "Am"], octaves: [0, 0, 0, 0] }
+        }
+      },
+      komuro: {
+        label: "小室",
+        progressions: {
+          "2tone": { chords: ["Am", "F", "C", "C"], octaves: [0, 0, 0, 0] },
+          "3tone": { chords: ["Am", "F", "G", "C"], octaves: [0, 0, 0, 0] },
+          "4tone": { chords: ["Am", "F", "G", "C"], octaves: [0, 0, 0, 0] }
+        }
+      }
+    };
+
+    const ui = {
+      pattern: document.getElementById("pattern"),
+      preset: document.getElementById("preset"),
+      progressionPreset: document.getElementById("progressionPreset"),
+      globalOctave: document.getElementById("globalOctave"),
+      voiceMode: document.getElementById("voiceMode"),
+      chordStep1: document.getElementById("chordStep1"),
+      octaveStep1: document.getElementById("octaveStep1"),
+      chordStep2: document.getElementById("chordStep2"),
+      octaveStep2: document.getElementById("octaveStep2"),
+      chordStep3: document.getElementById("chordStep3"),
+      octaveStep3: document.getElementById("octaveStep3"),
+      chordStep4: document.getElementById("chordStep4"),
+      octaveStep4: document.getElementById("octaveStep4"),
+      pitch: document.getElementById("pitch"),
+      tempo: document.getElementById("tempo"),
+      volume: document.getElementById("volume"),
+      reverb: document.getElementById("reverb"),
+      lowEq: document.getElementById("lowEq"),
+      highEq: document.getElementById("highEq"),
+      playButton: document.getElementById("playButton"),
+      loopToggle: document.getElementById("loopToggle"),
+      randomButton: document.getElementById("randomButton"),
+      downloadButton: document.getElementById("downloadButton"),
+      floatingPlay: document.querySelector(".floating-play"),
+      pitchValue: document.getElementById("pitchValue"),
+      tempoValue: document.getElementById("tempoValue"),
+      volumeValue: document.getElementById("volumeValue"),
+      reverbValue: document.getElementById("reverbValue"),
+      lowEqValue: document.getElementById("lowEqValue"),
+      highEqValue: document.getElementById("highEqValue"),
+      presetName: document.getElementById("presetName"),
+      presetDescription: document.getElementById("presetDescription"),
+      patternSummary: document.getElementById("patternSummary"),
+      chordSummary: document.getElementById("chordSummary"),
+      voiceSummary: document.getElementById("voiceSummary"),
+      pitchSummary: document.getElementById("pitchSummary"),
+      tempoSummary: document.getElementById("tempoSummary"),
+      volumeSummary: document.getElementById("volumeSummary"),
+      reverbSummary: document.getElementById("reverbSummary"),
+      eqSummary: document.getElementById("eqSummary"),
+      status: document.getElementById("status")
+    };
+
+    let audioContext = null;
+    let loopTimeoutId = null;
+
+    function sliderToSpacingMs(sliderValue) {
+      const min = Number(ui.tempo.min);
+      const max = Number(ui.tempo.max);
+      return min + max - sliderValue;
+    }
+
+    function spacingMsToTempoBpm(spacingMs) {
+      return Math.round(60000 / spacingMs);
+    }
+
+    function moveFloatingMeta() {
+      const floatingPlay = document.querySelector(".floating-play");
+      const controls = floatingPlay.querySelector(".floating-controls");
+      const miniGrid = document.querySelector(".summary .mini-grid");
+      const status = document.getElementById("status");
+
+      if (miniGrid && miniGrid.parentElement !== floatingPlay) {
+        floatingPlay.insertBefore(miniGrid, controls.nextSibling);
+      }
+
+      if (status && status.parentElement !== floatingPlay) {
+        floatingPlay.appendChild(status);
+      }
+    }
+
+    function initFloatingDrag() {
+      const panel = ui.floatingPlay;
+      if (!panel) {
+        return;
+      }
+
+      let dragState = null;
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      panel.addEventListener("pointerdown", (event) => {
+        if (event.target.closest("button, input, select, label")) {
+          return;
+        }
+
+        const rect = panel.getBoundingClientRect();
+        panel.style.left = rect.left + "px";
+        panel.style.top = rect.top + "px";
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+        panel.classList.add("dragging");
+
+        dragState = {
+          pointerId: event.pointerId,
+          offsetX: event.clientX - rect.left,
+          offsetY: event.clientY - rect.top
+        };
+
+        panel.setPointerCapture(event.pointerId);
+      });
+
+      panel.addEventListener("pointermove", (event) => {
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+          return;
+        }
+
+        const rect = panel.getBoundingClientRect();
+        const nextLeft = clamp(event.clientX - dragState.offsetX, 8, window.innerWidth - rect.width - 8);
+        const nextTop = clamp(event.clientY - dragState.offsetY, 8, window.innerHeight - rect.height - 8);
+
+        panel.style.left = nextLeft + "px";
+        panel.style.top = nextTop + "px";
+      });
+
+      function finishDrag(event) {
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+          return;
+        }
+
+        panel.classList.remove("dragging");
+        panel.releasePointerCapture(event.pointerId);
+        dragState = null;
+      }
+
+      panel.addEventListener("pointerup", finishDrag);
+      panel.addEventListener("pointercancel", finishDrag);
+    }
+
+    function getSettings() {
+      return {
+        patternKey: ui.pattern.value,
+        presetKey: ui.preset.value,
+        voiceMode: Number(ui.voiceMode.value),
+        chordSteps: [
+          ui.chordStep1.value,
+          ui.chordStep2.value,
+          ui.chordStep3.value,
+          ui.chordStep4.value
+        ],
+        octaveSteps: [
+          Number(ui.octaveStep1.value),
+          Number(ui.octaveStep2.value),
+          Number(ui.octaveStep3.value),
+          Number(ui.octaveStep4.value)
+        ],
+        globalOctave: Number(ui.globalOctave.value),
+        baseFrequency: Number(ui.pitch.value),
+        tempoSliderValue: Number(ui.tempo.value),
+        spacingMs: sliderToSpacingMs(Number(ui.tempo.value)),
+        masterVolume: Number(ui.volume.value),
+        reverbAmount: Number(ui.reverb.value) / 100,
+        lowEq: Number(ui.lowEq.value),
+        highEq: Number(ui.highEq.value),
+        loopEnabled: ui.loopToggle.checked
+      };
+    }
+
+    function clearLoopTimer() {
+      if (loopTimeoutId !== null) {
+        clearTimeout(loopTimeoutId);
+        loopTimeoutId = null;
+      }
+    }
+
+    function scheduleLoopNext(durationSeconds) {
+      clearLoopTimer();
+      loopTimeoutId = window.setTimeout(() => {
+        playChime();
+      }, Math.max(50, Math.round(durationSeconds * 1000)));
+    }
+
+    function updateUi() {
+      updateSelectableSteps();
+      const settings = getSettings();
+      const preset = PRESETS[settings.presetKey];
+      const pattern = PATTERNS[settings.patternKey];
+      const volumePercent = Math.round(settings.masterVolume * 100);
+      const reverbPercent = Math.round(settings.reverbAmount * 100);
+      const tempoBpm = spacingMsToTempoBpm(settings.spacingMs);
+      const eqSummary = `低 ${settings.lowEq >= 0 ? "+" : ""}${settings.lowEq} / 高 ${settings.highEq >= 0 ? "+" : ""}${settings.highEq}`;
+      const voiceLabel = settings.voiceMode === 1 ? "単音" : settings.voiceMode + "ボイス";
+      const progression = settings.chordSteps
+        .slice(0, pattern.degrees.length)
+        .map((symbol, index) => {
+          if (!symbol) {
+            return "--";
+          }
+          const octave = settings.octaveSteps[index] + settings.globalOctave;
+          const suffix = octave === 0 ? "" : ` (${octave > 0 ? "+" : ""}${octave}oct)`;
+          return (CHORD_LIBRARY[symbol]?.label || symbol) + suffix;
+        })
+        .join(" -> ");
+
+      ui.pitchValue.textContent = settings.baseFrequency + " Hz";
+      ui.tempoValue.textContent = tempoBpm + " BPM";
+      ui.volumeValue.textContent = volumePercent + "%";
+      ui.reverbValue.textContent = reverbPercent + "%";
+      ui.lowEqValue.textContent = `${settings.lowEq >= 0 ? "+" : ""}${settings.lowEq} dB`;
+      ui.highEqValue.textContent = `${settings.highEq >= 0 ? "+" : ""}${settings.highEq} dB`;
+      ui.presetName.textContent = preset.label;
+      ui.presetDescription.textContent = preset.description;
+      ui.patternSummary.textContent = pattern.label;
+      ui.chordSummary.textContent = progression;
+      ui.voiceSummary.textContent = voiceLabel;
+      ui.pitchSummary.textContent = settings.baseFrequency + " Hz";
+      ui.tempoSummary.textContent = tempoBpm + " BPM";
+      ui.volumeSummary.textContent = volumePercent + "%";
+      ui.reverbSummary.textContent = reverbPercent + "%";
+      ui.eqSummary.textContent = eqSummary;
+    }
+
+    function randomizeProgression() {
+      const chordKeys = Object.keys(CHORD_LIBRARY);
+      const patternLength = PATTERNS[ui.pattern.value].degrees.length;
+      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
+
+      for (let index = 0; index < patternLength; index += 1) {
+        const choice = chordKeys[Math.floor(Math.random() * chordKeys.length)];
+        chordSteps[index].value = choice;
+      }
+
+      updateUi();
+      ui.status.textContent = "コード進行をランダムに更新しました。気になる流れが出たらそのまま試聴できます。";
+    }
+
+    async function ensureAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+      return audioContext;
+    }
+
+    function createDriveCurve(amount) {
+      const curve = new Float32Array(256);
+      for (let i = 0; i < curve.length; i += 1) {
+        const x = (i / (curve.length - 1)) * 2 - 1;
+        curve[i] = Math.tanh(x * amount);
+      }
+      return curve;
+    }
+
+    function degreeToSemitone(degree) {
+      const octave = Math.floor(degree / MAJOR_SCALE.length);
+      const index = ((degree % MAJOR_SCALE.length) + MAJOR_SCALE.length) % MAJOR_SCALE.length;
+      return MAJOR_SCALE[index] + octave * 12;
+    }
+
+    function degreeToFrequency(baseFrequency, degree) {
+      return baseFrequency * Math.pow(2, degreeToSemitone(degree) / 12);
+    }
+
+    function getVoicedChordTones(chord, voiceMode) {
+      const tones = chord.tones.slice(0, voiceMode);
+
+      while (tones.length < voiceMode) {
+        const sourceTone = chord.tones[(tones.length - chord.tones.length + chord.tones.length) % chord.tones.length];
+        tones.push(sourceTone + MAJOR_SCALE.length);
+      }
+
+      return tones;
+    }
+
+    function populateChordSelectors() {
+      const optionsHtml = `<option value="">--</option>` + Object.entries(CHORD_LIBRARY)
+        .map(([value, chord]) => `<option value="${value}">${chord.label}</option>`)
+        .join("");
+      const octaveHtml = [-3, -2, -1, 0, 1, 2, 3]
+        .map((octave) => `<option value="${octave}">${octave > 0 ? "+" : ""}${octave} oct</option>`)
+        .join("");
+
+      [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4].forEach((select) => {
+        select.innerHTML = optionsHtml;
+      });
+      [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4].forEach((select) => {
+        select.innerHTML = octaveHtml;
+        select.value = "0";
+      });
+      ui.globalOctave.innerHTML = octaveHtml;
+      ui.globalOctave.value = "0";
+
+      applyProgressionPreset(ui.progressionPreset.value || "default");
+      updateSelectableSteps();
+    }
+
+    function populateProgressionPresetSelector() {
+      ui.progressionPreset.innerHTML = [
+        `<option value="default">${PROGRESSION_PRESETS.default.label}</option>`,
+        `<option value="greeting">${PROGRESSION_PRESETS.greeting.label}</option>`,
+        `<option value="airport">${PROGRESSION_PRESETS.airport.label}</option>`,
+        `<option value="canon">${PROGRESSION_PRESETS.canon.label}</option>`,
+        `<option value="royal">${PROGRESSION_PRESETS.royal.label}</option>`,
+        `<option value="komuro">${PROGRESSION_PRESETS.komuro.label}</option>`
+      ].join("");
+      ui.progressionPreset.value = "default";
+    }
+
+    function applyProgressionPreset(presetKey) {
+      const preset = PROGRESSION_PRESETS[presetKey] || PROGRESSION_PRESETS.default;
+      const progression = preset.progressions[ui.pattern.value] || {
+        chords: DEFAULT_PROGRESSIONS[ui.pattern.value],
+        octaves: [0, 0, 0, 0]
+      };
+      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
+      const octaveSteps = [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4];
+
+      chordSteps.forEach((select, index) => {
+        select.value = progression.chords[index] || "";
+      });
+
+      octaveSteps.forEach((select, index) => {
+        select.value = String(progression.octaves[index] || 0);
+      });
+
+      ui.progressionPreset.value = presetKey;
+
+      updateSelectableSteps();
+    }
+
+    function updateSelectableSteps() {
+      const patternLength = PATTERNS[ui.pattern.value].degrees.length;
+      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
+      const octaveSteps = [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4];
+
+      chordSteps.forEach((select, index) => {
+        const enabled = index < patternLength;
+        select.disabled = !enabled;
+        if (!enabled) {
+          select.dataset.savedValue = select.value;
+          select.value = "";
+        } else if (!select.value && select.dataset.savedValue) {
+          select.value = select.dataset.savedValue;
+        } else if (!select.value) {
+          select.selectedIndex = Math.min(1, select.options.length - 1);
+        }
+      });
+
+      octaveSteps.forEach((select, index) => {
+        const enabled = index < patternLength;
+        select.disabled = !enabled;
+        if (!enabled) {
+          select.dataset.savedValue = select.value;
+          select.value = "0";
+        } else if (select.value === "0" && select.dataset.savedValue !== undefined) {
+          select.value = select.dataset.savedValue;
+        }
+      });
+    }
+
+    function buildNotePlan(settings) {
+      const pattern = PATTERNS[settings.patternKey];
+      return pattern.degrees.map((degree, index) => {
+        const chord = CHORD_LIBRARY[settings.chordSteps[index]] || CHORD_LIBRARY["C"];
+        const octaveOffset = ((settings.octaveSteps[index] || 0) + settings.globalOctave) * MAJOR_SCALE.length;
+        const selectedTones = getVoicedChordTones(chord, settings.voiceMode);
+        const voiceWeights = settings.voiceMode === 1
+          ? [0.96]
+          : settings.voiceMode === 2
+            ? [0.84, 0.44]
+            : settings.voiceMode === 3
+              ? [0.78, 0.44, 0.34]
+              : [0.72, 0.42, 0.32, 0.24];
+        const voiceOffsets = settings.voiceMode === 1
+          ? [0]
+          : settings.voiceMode === 2
+            ? [0, 0.008]
+            : settings.voiceMode === 3
+              ? [0, 0.006, 0.012]
+              : [0, 0.004, 0.009, 0.015];
+
+        const notes = selectedTones.map((tone, toneIndex) => ({
+          frequency: degreeToFrequency(settings.baseFrequency, tone + octaveOffset),
+          weight: voiceWeights[toneIndex] || 0.24,
+          startOffset: voiceOffsets[toneIndex] || 0
+        }));
+
+        return notes;
+      });
+    }
+
+    function createMasterChain(ctx, settings) {
+      const input = ctx.createGain();
+      const compressor = ctx.createDynamicsCompressor();
+      const lowShelf = ctx.createBiquadFilter();
+      const highShelf = ctx.createBiquadFilter();
+      const outputGain = ctx.createGain();
+
+      compressor.threshold.value = -18;
+      compressor.knee.value = 22;
+      compressor.ratio.value = 2.2;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.18;
+
+      lowShelf.type = "lowshelf";
+      lowShelf.frequency.value = 240;
+      lowShelf.gain.value = settings.lowEq;
+
+      highShelf.type = "highshelf";
+      highShelf.frequency.value = 2600;
+      highShelf.gain.value = settings.highEq;
+
+      outputGain.gain.value = Math.min(0.88, settings.masterVolume * 0.62);
+
+      input.connect(compressor);
+      compressor.connect(lowShelf);
+      lowShelf.connect(highShelf);
+      highShelf.connect(outputGain);
+      outputGain.connect(ctx.destination);
+      return input;
+    }
+
+    function createReverbNetwork(ctx, output, preset, totalDuration, baseTime, reverbAmount, settings) {
+      const send = ctx.createGain();
+      const dry = ctx.createGain();
+      const wet = ctx.createGain();
+      const preDelay = ctx.createDelay(1.2);
+      const feedbackDelay = ctx.createDelay(1.2);
+      const feedback = ctx.createGain();
+      const lowpass = ctx.createBiquadFilter();
+      const highpass = ctx.createBiquadFilter();
+      const presence = ctx.createBiquadFilter();
+      const tailFade = ctx.createGain();
+
+      const wetScale = Math.max(0, Math.min(1.6, reverbAmount));
+      dry.gain.value = preset.dryLevel;
+      wet.gain.value = preset.echoMix * wetScale;
+      preDelay.delayTime.value = preset.preDelay;
+      feedbackDelay.delayTime.value = preset.echoTime;
+      feedback.gain.value = Math.min(0.6, preset.echoFeedback * (0.72 + wetScale * 0.5));
+
+      lowpass.type = "lowpass";
+      lowpass.frequency.value = preset.reverbLowpass * (1 + Math.max(0, settings.highEq || 0) * 0.015);
+      lowpass.Q.value = 0.22;
+
+      highpass.type = "highpass";
+      highpass.frequency.value = preset.reverbHighpass;
+      highpass.Q.value = 0.15;
+
+      presence.type = "highshelf";
+      presence.frequency.value = 2200;
+      presence.gain.value = preset.presence + Math.max(0, settings.highEq || 0) * 0.18;
+
+      send.connect(dry);
+      dry.connect(output);
+
+      send.connect(preDelay);
+      preDelay.connect(feedbackDelay);
+      feedbackDelay.connect(lowpass);
+      lowpass.connect(highpass);
+      highpass.connect(presence);
+      presence.connect(wet);
+      wet.connect(tailFade);
+      tailFade.connect(output);
+
+      presence.connect(feedback);
+      feedback.connect(feedbackDelay);
+
+      preset.tapGains.forEach((gain, index) => {
+        const tapDelay = ctx.createDelay(1.2);
+        const tapGain = ctx.createGain();
+        const tapFilter = ctx.createBiquadFilter();
+
+        tapDelay.delayTime.value = preset.echoTime * preset.tapRatios[index];
+        tapGain.gain.value = gain * (0.72 + wetScale * 0.46);
+        tapFilter.type = index === 0 ? "bandpass" : "lowpass";
+        tapFilter.frequency.value = index === 0
+          ? preset.reverbLowpass * 0.82
+          : preset.reverbLowpass - (index * 460);
+        tapFilter.Q.value = index === 0 ? 0.72 : 0.18;
+
+        send.connect(tapDelay);
+        tapDelay.connect(tapFilter);
+        tapFilter.connect(tapGain);
+        tapGain.connect(wet);
+      });
+
+      tailFade.gain.setValueAtTime(1, baseTime);
+      tailFade.gain.setTargetAtTime(0.0001, Math.max(baseTime, baseTime + totalDuration - 0.22), 0.16);
+
+      return send;
+    }
+
+    function createAttackNoiseBuffer(ctx) {
+      const sampleRate = ctx.sampleRate;
+      const frameCount = Math.max(1, Math.floor(sampleRate * 0.05));
+      const buffer = ctx.createBuffer(1, frameCount, sampleRate);
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < frameCount; i += 1) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / frameCount);
+      }
+
+      return buffer;
+    }
+
+    function scheduleTransient(ctx, destination, startTime, frequency, gainScale, preset, noiseBuffer) {
+      const noise = ctx.createBufferSource();
+      const noiseFilter = ctx.createBiquadFilter();
+      const noiseGain = ctx.createGain();
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+
+      noise.buffer = noiseBuffer;
+      noiseFilter.type = "bandpass";
+      noiseFilter.frequency.setValueAtTime(
+        Math.max(1200, Math.min(5200, preset.attackTone + frequency * 0.65)),
+        startTime
+      );
+      noiseFilter.Q.value = preset.attackQ;
+
+      noiseGain.gain.setValueAtTime(0.0001, startTime);
+      noiseGain.gain.linearRampToValueAtTime(gainScale * preset.attackGain, startTime + 0.004);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + preset.attackNoise);
+
+      clickOsc.type = preset.transientWave;
+      clickOsc.frequency.setValueAtTime(Math.min(3600, frequency * 2.45), startTime);
+      clickOsc.frequency.exponentialRampToValueAtTime(Math.min(2100, frequency * 1.35), startTime + 0.03);
+      clickGain.gain.setValueAtTime(0.0001, startTime);
+      clickGain.gain.linearRampToValueAtTime(gainScale * preset.attackGain * 0.5, startTime + 0.003);
+      clickGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.042);
+
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(destination);
+
+      clickOsc.connect(clickGain);
+      clickGain.connect(destination);
+
+      noise.start(startTime);
+      noise.stop(startTime + 0.05);
+      clickOsc.start(startTime);
+      clickOsc.stop(startTime + 0.05);
+    }
+
+    function scheduleVoice(ctx, destination, startTime, frequency, gainScale, preset, noiseBuffer, settings) {
+      const noteLength = preset.attack + preset.decay1 + preset.decay2 + preset.release + 0.08;
+      const bodyGain = ctx.createGain();
+      const bodyHighpass = ctx.createBiquadFilter();
+      const bodyLowpass = ctx.createBiquadFilter();
+      const saturator = ctx.createWaveShaper();
+
+      bodyHighpass.type = "highpass";
+      bodyHighpass.frequency.value = preset.bodyHighpass;
+      bodyHighpass.Q.value = 0.15;
+
+      bodyLowpass.type = "lowpass";
+      const clarityBoost = 1 + Math.max(0, settings.highEq) * 0.018;
+      bodyLowpass.frequency.setValueAtTime(preset.bodyLowpass * clarityBoost, startTime);
+      bodyLowpass.frequency.exponentialRampToValueAtTime(preset.bodyLowpassEnd * clarityBoost, startTime + noteLength);
+      bodyLowpass.Q.value = preset.bodyQ;
+
+      bodyGain.gain.setValueAtTime(0.0001, startTime);
+      bodyGain.gain.linearRampToValueAtTime(gainScale * preset.peak, startTime + preset.attack);
+      bodyGain.gain.exponentialRampToValueAtTime(gainScale * preset.peak * 0.38, startTime + preset.attack + preset.decay1);
+      bodyGain.gain.exponentialRampToValueAtTime(
+        Math.max(0.0001, gainScale * preset.sustain),
+        startTime + preset.attack + preset.decay1 + preset.decay2
+      );
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteLength);
+
+      saturator.curve = createDriveCurve(preset.shaperDrive);
+      saturator.oversample = "2x";
+
+      preset.partials.forEach((partial) => {
+        const oscMain = ctx.createOscillator();
+        const oscSide = ctx.createOscillator();
+        const mix = ctx.createGain();
+        const pan = ctx.createStereoPanner();
+        const partialFrequency = Math.max(40, frequency * partial.ratio);
+
+        oscMain.type = partial.mainWave;
+        oscSide.type = partial.sideWave;
+
+        oscMain.frequency.setValueAtTime(partialFrequency * preset.attackLift, startTime);
+        oscSide.frequency.setValueAtTime(partialFrequency * preset.attackLift, startTime);
+        oscMain.frequency.exponentialRampToValueAtTime(partialFrequency, startTime + Math.max(0.018, preset.attack * 1.7));
+        oscSide.frequency.exponentialRampToValueAtTime(partialFrequency, startTime + Math.max(0.02, preset.attack * 2));
+
+        oscMain.detune.setValueAtTime(-partial.spread, startTime);
+        oscSide.detune.setValueAtTime(partial.spread, startTime);
+
+        mix.gain.value = partial.gain * 0.5;
+        pan.pan.value = partial.pan * preset.stereoWidth * 6;
+
+        oscMain.connect(mix);
+        oscSide.connect(mix);
+        mix.connect(pan);
+        pan.connect(bodyHighpass);
+
+        oscMain.start(startTime);
+        oscSide.start(startTime);
+        oscMain.stop(startTime + noteLength + 0.06);
+        oscSide.stop(startTime + noteLength + 0.06);
+      });
+
+      const shimmerOsc = ctx.createOscillator();
+      const shimmerGain = ctx.createGain();
+      const shimmerPan = ctx.createStereoPanner();
+
+      shimmerOsc.type = preset.shimmerWave;
+      shimmerOsc.frequency.setValueAtTime(frequency * preset.shimmerRatio, startTime);
+      shimmerOsc.detune.setValueAtTime(preset.shimmerDetune, startTime);
+      shimmerGain.gain.setValueAtTime(0.0001, startTime);
+      shimmerGain.gain.linearRampToValueAtTime(gainScale * preset.shimmerGain, startTime + preset.attack * 1.2);
+      shimmerGain.gain.exponentialRampToValueAtTime(0.0001, startTime + preset.attack + preset.shimmerDecay);
+      shimmerPan.pan.value = preset.stereoWidth;
+
+      shimmerOsc.connect(shimmerGain);
+      shimmerGain.connect(shimmerPan);
+      shimmerPan.connect(bodyHighpass);
+      shimmerOsc.start(startTime);
+      shimmerOsc.stop(startTime + preset.attack + preset.shimmerDecay + 0.05);
+
+      bodyHighpass.connect(bodyLowpass);
+      bodyLowpass.connect(saturator);
+      saturator.connect(bodyGain);
+      bodyGain.connect(destination);
+
+      scheduleTransient(ctx, destination, startTime, frequency, gainScale, preset, noiseBuffer);
+    }
+
+    function renderChimeToContext(ctx, settings) {
+      const preset = PRESETS[settings.presetKey];
+      const notePlan = buildNotePlan(settings);
+      const spacing = settings.spacingMs / 1000;
+      const noteDuration = preset.attack + preset.decay1 + preset.decay2 + preset.release + 0.08;
+      const totalDuration = spacing * (notePlan.length - 1) + noteDuration + 0.42;
+      const baseTime = ctx.currentTime + 0.03;
+      const masterInput = createMasterChain(ctx, settings);
+      const reverbSend = createReverbNetwork(ctx, masterInput, preset, totalDuration, baseTime, settings.reverbAmount, settings);
+      const noiseBuffer = createAttackNoiseBuffer(ctx);
+
+      notePlan.forEach((notes, index) => {
+        const noteStart = baseTime + 0.045 + spacing * index;
+        const stepGain = index === 0 ? 0.96 : index === notePlan.length - 1 ? 0.9 : 0.84;
+
+        notes.forEach((note) => {
+          scheduleVoice(
+            ctx,
+            reverbSend,
+            noteStart + note.startOffset,
+            note.frequency,
+            stepGain * note.weight,
+            preset,
+            noiseBuffer,
+            settings
+          );
+        });
+      });
+
+      return Math.max(0.24, totalDuration - 0.12);
+    }
+
+    async function playChime() {
+      try {
+        const ctx = await ensureAudioContext();
+        const settings = getSettings();
+        clearLoopTimer();
+        const duration = renderChimeToContext(ctx, settings);
+        if (settings.loopEnabled) {
+          scheduleLoopNext(duration);
+          ui.status.textContent = "ループ再生中です。設定を変えると次の周回から反映されます。";
+        } else {
+          ui.status.textContent = "再生中です。音階と和音を切り替えると、同じチャイムでも印象が大きく変わります。";
+        }
+      } catch (error) {
+        clearLoopTimer();
+        ui.status.textContent = "再生の開始に失敗しました。もう一度操作してみてください。";
+        console.error(error);
+      }
+    }
+
+    function audioBufferToWavBlob(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const bitDepth = 16;
+      const blockAlign = numChannels * bitDepth / 8;
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = buffer.length * blockAlign;
+      const arrayBuffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(arrayBuffer);
+
+      function writeString(offset, text) {
+        for (let i = 0; i < text.length; i += 1) {
+          view.setUint8(offset + i, text.charCodeAt(i));
+        }
+      }
+
+      writeString(0, "RIFF");
+      view.setUint32(4, 36 + dataSize, true);
+      writeString(8, "WAVE");
+      writeString(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitDepth, true);
+      writeString(36, "data");
+      view.setUint32(40, dataSize, true);
+
+      const channels = [];
+      for (let i = 0; i < numChannels; i += 1) {
+        channels.push(buffer.getChannelData(i));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < buffer.length; i += 1) {
+        for (let channel = 0; channel < numChannels; channel += 1) {
+          const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+
+      return new Blob([arrayBuffer], { type: "audio/wav" });
+    }
+
+    async function downloadWav() {
+      const settings = getSettings();
+      const preset = PRESETS[settings.presetKey];
+      const notePlan = buildNotePlan(settings);
+      const roughDuration = (settings.spacingMs / 1000) * (notePlan.length - 1)
+        + preset.attack + preset.decay1 + preset.decay2 + preset.release + 1.8;
+
+      ui.downloadButton.disabled = true;
+      ui.status.textContent = "オフラインで高品質レンダリング中です。数秒お待ちください。";
+
+      try {
+        const sampleRate = 48000;
+        const offlineContext = new OfflineAudioContext(2, Math.ceil(sampleRate * roughDuration), sampleRate);
+        renderChimeToContext(offlineContext, settings);
+        const renderedBuffer = await offlineContext.startRendering();
+        const blob = audioBufferToWavBlob(renderedBuffer);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const safePreset = PRESETS[settings.presetKey].label.replace(/\s+/g, "-").toLowerCase();
+
+        link.href = url;
+        link.download = "bus-chime-" + safePreset + ".wav";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        ui.status.textContent = "WAVを書き出しました。試聴と同じ音源設計でレンダリングしています。";
+      } catch (error) {
+        ui.status.textContent = "WAV書き出しに失敗しました。ブラウザを変えて再試行してください。";
+        console.error(error);
+      } finally {
+        ui.downloadButton.disabled = false;
+      }
+    }
+
+    ["input", "change"].forEach((eventName) => {
+      ui.pattern.addEventListener(eventName, updateUi);
+      ui.preset.addEventListener(eventName, updateUi);
+      ui.progressionPreset.addEventListener(eventName, () => {
+        applyProgressionPreset(ui.progressionPreset.value);
+        updateUi();
+      });
+      ui.globalOctave.addEventListener(eventName, updateUi);
+      ui.voiceMode.addEventListener(eventName, updateUi);
+      ui.chordStep1.addEventListener(eventName, updateUi);
+      ui.octaveStep1.addEventListener(eventName, updateUi);
+      ui.chordStep2.addEventListener(eventName, updateUi);
+      ui.octaveStep2.addEventListener(eventName, updateUi);
+      ui.chordStep3.addEventListener(eventName, updateUi);
+      ui.octaveStep3.addEventListener(eventName, updateUi);
+      ui.chordStep4.addEventListener(eventName, updateUi);
+      ui.octaveStep4.addEventListener(eventName, updateUi);
+      ui.pitch.addEventListener(eventName, updateUi);
+      ui.tempo.addEventListener(eventName, updateUi);
+      ui.volume.addEventListener(eventName, updateUi);
+      ui.reverb.addEventListener(eventName, updateUi);
+      ui.lowEq.addEventListener(eventName, updateUi);
+      ui.highEq.addEventListener(eventName, updateUi);
+    });
+
+    ui.playButton.addEventListener("click", playChime);
+    ui.loopToggle.addEventListener("change", () => {
+      if (!ui.loopToggle.checked) {
+        clearLoopTimer();
+      }
+      updateUi();
+    });
+    ui.randomButton.addEventListener("click", randomizeProgression);
+    ui.downloadButton.addEventListener("click", downloadWav);
+
+    populateProgressionPresetSelector();
+    populateChordSelectors();
+    moveFloatingMeta();
+    initFloatingDrag();
+    updateUi();
+  </script>
+</body>
+</html>
