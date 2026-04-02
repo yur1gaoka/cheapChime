@@ -1000,6 +1000,38 @@
       }
     }
 
+    function getPreviewNotePlan(settings, stepIndex) {
+      const pattern = PATTERNS[settings.patternKey];
+      const degree = pattern.degrees[stepIndex];
+      if (degree === undefined) {
+        return [];
+      }
+
+      const chord = CHORD_LIBRARY[settings.chordSteps[stepIndex]] || CHORD_LIBRARY["C"];
+      const octaveOffset = ((settings.octaveSteps[stepIndex] || 0) + settings.globalOctave) * MAJOR_SCALE.length;
+      const selectedTones = getVoicedChordTones(chord, settings.voiceMode);
+      const voiceWeights = settings.voiceMode === 1
+        ? [0.96]
+        : settings.voiceMode === 2
+          ? [0.84, 0.44]
+          : settings.voiceMode === 3
+            ? [0.78, 0.44, 0.34]
+            : [0.72, 0.42, 0.32, 0.24];
+      const voiceOffsets = settings.voiceMode === 1
+        ? [0]
+        : settings.voiceMode === 2
+          ? [0, 0.008]
+          : settings.voiceMode === 3
+            ? [0, 0.006, 0.012]
+            : [0, 0.004, 0.009, 0.015];
+
+      return selectedTones.map((tone, toneIndex) => ({
+        frequency: degreeToFrequency(settings.baseFrequency, tone + octaveOffset),
+        weight: voiceWeights[toneIndex] || 0.24,
+        startOffset: voiceOffsets[toneIndex] || 0
+      }));
+    }
+
     function scheduleLoopNext(durationSeconds) {
       clearLoopTimer();
       loopTimeoutId = window.setTimeout(() => {
@@ -1510,6 +1542,49 @@
       }
     }
 
+    async function playChordStepPreview(stepIndex) {
+      if (stepIndex < 0) {
+        return;
+      }
+
+      try {
+        const ctx = await ensureAudioContext();
+        const settings = getSettings();
+        const preset = PRESETS[settings.presetKey];
+        const notes = getPreviewNotePlan(settings, stepIndex);
+
+        if (!notes.length) {
+          return;
+        }
+
+        const baseTime = ctx.currentTime + 0.02;
+        const noteDuration = preset.attack + preset.decay1 + preset.decay2 + preset.release + 0.08;
+        const totalDuration = noteDuration + 0.32;
+        const masterInput = createMasterChain(ctx, settings);
+        const reverbSend = createReverbNetwork(ctx, masterInput, preset, totalDuration, baseTime, settings.reverbAmount, settings);
+        const noiseBuffer = createAttackNoiseBuffer(ctx);
+
+        notes.forEach((note) => {
+          scheduleVoice(
+            ctx,
+            reverbSend,
+            baseTime + note.startOffset,
+            note.frequency,
+            0.88 * note.weight,
+            preset,
+            noiseBuffer,
+            settings
+          );
+        });
+
+        const chordLabel = CHORD_LIBRARY[settings.chordSteps[stepIndex]]?.label || settings.chordSteps[stepIndex] || "--";
+        ui.status.textContent = `${stepIndex + 1}音目のコード ${chordLabel} を試聴しました。`;
+      } catch (error) {
+        ui.status.textContent = "コード試聴の開始に失敗しました。もう一度操作してみてください。";
+        console.error(error);
+      }
+    }
+
     function audioBufferToWavBlob(buffer) {
       const numChannels = buffer.numberOfChannels;
       const sampleRate = buffer.sampleRate;
@@ -1619,6 +1694,11 @@
     });
 
     ui.playButton.addEventListener("click", playChime);
+    [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4].forEach((select, index) => {
+      select.addEventListener("change", () => {
+        playChordStepPreview(index);
+      });
+    });
     ui.loopToggle.addEventListener("change", () => {
       if (!ui.loopToggle.checked) {
         clearLoopTimer();
