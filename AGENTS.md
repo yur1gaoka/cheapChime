@@ -5,7 +5,7 @@
 
 ## プロジェクト概要
 
-- 対象はブラウザのみで動くバスチャイム生成ツール
+- 対象はブラウザのみで動くチャイム生成ツール
 - 実装は `index.html` 単体で完結する
 - 外部ライブラリ、CDN、サーバ利用は禁止
 - 技術要素は HTML / CSS / JavaScript / Web Audio API / OfflineAudioContext のみ
