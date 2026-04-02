@@ -1240,6 +1240,30 @@
       });
     }
 
+    function slugifyFilePart(value) {
+      return String(value || "")
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    function buildDownloadFileName(settings) {
+      const patternLength = PATTERNS[settings.patternKey].degrees.length;
+      const presetLabel = PRESETS[settings.presetKey].label;
+      const chordLabel = settings.chordSteps
+        .slice(0, patternLength)
+        .map((symbol) => CHORD_LIBRARY[symbol]?.label || symbol || "--")
+        .join("-");
+      const voiceLabel = settings.voiceMode === 1 ? "mono" : `${settings.voiceMode}voice`;
+      const safePreset = slugifyFilePart(presetLabel);
+      const safeChord = slugifyFilePart(chordLabel);
+      const safeVoice = slugifyFilePart(voiceLabel);
+
+      return `${safePreset}_${safeChord || "chord"}_${safeVoice}.wav`;
+    }
+
     function buildNotePlan(settings) {
       const pattern = PATTERNS[settings.patternKey];
       return pattern.degrees.map((degree, index) => {
@@ -1693,10 +1717,9 @@
         const blob = audioBufferToWavBlob(renderedBuffer);
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        const safePreset = PRESETS[settings.presetKey].label.replace(/\s+/g, "-").toLowerCase();
 
         link.href = url;
-        link.download = "bus-chime-" + safePreset + ".wav";
+        link.download = buildDownloadFileName(settings);
         document.body.appendChild(link);
         link.click();
         link.remove();
