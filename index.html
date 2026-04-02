@@ -878,6 +878,8 @@
 
     let audioContext = null;
     let loopTimeoutId = null;
+    let manualOneShotActive = false;
+    let manualOneShotReleaseTimeoutId = null;
 
     function sliderToSpacingMs(sliderValue) {
       const min = Number(ui.tempo.min);
@@ -998,6 +1000,25 @@
         clearTimeout(loopTimeoutId);
         loopTimeoutId = null;
       }
+    }
+
+    function clearManualOneShotReleaseTimer() {
+      if (manualOneShotReleaseTimeoutId !== null) {
+        clearTimeout(manualOneShotReleaseTimeoutId);
+        manualOneShotReleaseTimeoutId = null;
+      }
+    }
+
+    function scheduleManualOneShotRelease(durationSeconds) {
+      clearManualOneShotReleaseTimer();
+      manualOneShotReleaseTimeoutId = window.setTimeout(() => {
+        manualOneShotActive = false;
+        manualOneShotReleaseTimeoutId = null;
+      }, Math.max(50, Math.round(durationSeconds * 1000)));
+    }
+
+    function isPreviewPlaybackBlocked() {
+      return manualOneShotActive || loopTimeoutId !== null;
     }
 
     function getPreviewNotePlan(settings, stepIndex) {
@@ -1530,19 +1551,29 @@
         clearLoopTimer();
         const duration = renderChimeToContext(ctx, settings);
         if (settings.loopEnabled) {
+          clearManualOneShotReleaseTimer();
+          manualOneShotActive = false;
           scheduleLoopNext(duration);
           ui.status.textContent = "ループ再生中です。設定を変えると次の周回から反映されます。";
         } else {
+          manualOneShotActive = true;
+          scheduleManualOneShotRelease(duration);
           ui.status.textContent = "再生中です。音階と和音を切り替えると、同じチャイムでも印象が大きく変わります。";
         }
       } catch (error) {
         clearLoopTimer();
+        clearManualOneShotReleaseTimer();
+        manualOneShotActive = false;
         ui.status.textContent = "再生の開始に失敗しました。もう一度操作してみてください。";
         console.error(error);
       }
     }
 
     async function playPresetPreview() {
+      if (isPreviewPlaybackBlocked()) {
+        return;
+      }
+
       try {
         const ctx = await ensureAudioContext();
         const settings = { ...getSettings(), loopEnabled: false };
@@ -1555,7 +1586,7 @@
     }
 
     async function playChordStepPreview(stepIndex) {
-      if (stepIndex < 0) {
+      if (stepIndex < 0 || isPreviewPlaybackBlocked()) {
         return;
       }
 
