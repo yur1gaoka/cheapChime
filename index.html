@@ -1542,6 +1542,18 @@
       }
     }
 
+    async function playPresetPreview() {
+      try {
+        const ctx = await ensureAudioContext();
+        const settings = { ...getSettings(), loopEnabled: false };
+        renderChimeToContext(ctx, settings);
+        ui.status.textContent = `${PRESETS[settings.presetKey].label} を試聴しました。`;
+      } catch (error) {
+        ui.status.textContent = "音色プリセット試聴の開始に失敗しました。もう一度操作してみてください。";
+        console.error(error);
+      }
+    }
+
     async function playChordStepPreview(stepIndex) {
       if (stepIndex < 0) {
         return;
@@ -1694,6 +1706,7 @@
     });
 
     ui.playButton.addEventListener("click", playChime);
+    ui.preset.addEventListener("change", playPresetPreview);
     [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4].forEach((select, index) => {
       select.addEventListener("change", () => {
         playChordStepPreview(index);
