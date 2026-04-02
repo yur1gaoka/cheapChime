@@ -113,11 +113,50 @@
       line-height: 1.5;
     }
 
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 1 auto;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 250, 243, 0.92);
+      border: 1px solid rgba(92, 71, 46, 0.1);
+      color: #4a3b2c;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .radio-option input[type="radio"] {
+      margin: 0;
+      accent-color: #9a4f25;
+    }
+
+    .code-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+    }
+
     .code-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 108px;
+      grid-template-columns: 62px minmax(0, 1fr) 108px;
       gap: 10px;
       align-items: center;
+    }
+
+    .code-step-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
     }
 
     select, input[type="range"] { width: 100%; }
@@ -234,8 +273,30 @@
       user-select: none;
     }
 
+    .floating-play.collapsed {
+      width: auto;
+      min-width: 0;
+      padding: 10px;
+      border-radius: 18px;
+      gap: 0;
+    }
+
     .floating-play.dragging {
       cursor: grabbing;
+    }
+
+    .floating-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .panel-toggle {
+      min-width: 40px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1;
     }
 
     .floating-controls {
@@ -261,6 +322,12 @@
     .floating-play .mini .value {
       font-size: 14px;
       line-height: 1.35;
+    }
+
+    .floating-play.collapsed .floating-controls,
+    .floating-play.collapsed .mini-grid,
+    .floating-play.collapsed .status {
+      display: none;
     }
 
     .loop-toggle {
@@ -344,6 +411,7 @@
       .actions { flex-direction: column; }
       button { width: 100%; }
       .mini-grid { grid-template-columns: 1fr; }
+      .code-grid { grid-template-columns: 1fr; }
       .floating-play {
         left: 14px;
         right: 14px;
@@ -373,12 +441,41 @@
         <h2 class="section-title">設定</h2>
         <div class="grid">
           <div class="field">
-            <label for="pattern">チャイム種類</label>
-            <select id="pattern">
-              <option value="2tone">2点チャイム</option>
-              <option value="3tone">3点チャイム</option>
-              <option value="4tone">4点チャイム</option>
-            </select>
+            <label>チャイム種類</label>
+            <div class="radio-group" role="radiogroup" aria-label="チャイム種類">
+              <label class="radio-option" for="pattern1">
+                <input id="pattern1" type="radio" name="pattern" value="1tone">
+                <span>1点</span>
+              </label>
+              <label class="radio-option" for="pattern2">
+                <input id="pattern2" type="radio" name="pattern" value="2tone">
+                <span>2点</span>
+              </label>
+              <label class="radio-option" for="pattern3">
+                <input id="pattern3" type="radio" name="pattern" value="3tone" checked>
+                <span>3点</span>
+              </label>
+              <label class="radio-option" for="pattern4">
+                <input id="pattern4" type="radio" name="pattern" value="4tone">
+                <span>4点</span>
+              </label>
+              <label class="radio-option" for="pattern5">
+                <input id="pattern5" type="radio" name="pattern" value="5tone">
+                <span>5点</span>
+              </label>
+              <label class="radio-option" for="pattern6">
+                <input id="pattern6" type="radio" name="pattern" value="6tone">
+                <span>6点</span>
+              </label>
+              <label class="radio-option" for="pattern7">
+                <input id="pattern7" type="radio" name="pattern" value="7tone">
+                <span>7点</span>
+              </label>
+              <label class="radio-option" for="pattern8">
+                <input id="pattern8" type="radio" name="pattern" value="8tone">
+                <span>8点</span>
+              </label>
+            </div>
           </div>
 
           <div class="field">
@@ -387,6 +484,9 @@
               <option value="standard">Standard Bell</option>
               <option value="soft">Soft Chime</option>
               <option value="bright">Bright Synth Chime</option>
+              <option value="edmpluck">EDM Pluck Chime</option>
+              <option value="festival">Festival Lead Chime</option>
+              <option value="sidechainglass">Sidechain Glass</option>
               <option value="aircraft">Aircraft Cabin</option>
               <option value="musicbox">Music Box</option>
               <option value="crystal">Crystal Guide</option>
@@ -408,21 +508,47 @@
                 </div>
               </div>
             </div>
-            <div class="code-row">
-              <select id="chordStep1"></select>
-              <select id="octaveStep1"></select>
-            </div>
-            <div class="code-row">
-              <select id="chordStep2"></select>
-              <select id="octaveStep2"></select>
-            </div>
-            <div class="code-row">
-              <select id="chordStep3"></select>
-              <select id="octaveStep3"></select>
-            </div>
-            <div class="code-row">
-              <select id="chordStep4"></select>
-              <select id="octaveStep4"></select>
+            <div class="code-grid">
+              <div class="code-row">
+                <span class="code-step-label">1音め</span>
+                <select id="chordStep1"></select>
+                <select id="octaveStep1"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">5音め</span>
+                <select id="chordStep5"></select>
+                <select id="octaveStep5"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">2音め</span>
+                <select id="chordStep2"></select>
+                <select id="octaveStep2"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">6音め</span>
+                <select id="chordStep6"></select>
+                <select id="octaveStep6"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">3音め</span>
+                <select id="chordStep3"></select>
+                <select id="octaveStep3"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">7音め</span>
+                <select id="chordStep7"></select>
+                <select id="octaveStep7"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">4音め</span>
+                <select id="chordStep4"></select>
+                <select id="octaveStep4"></select>
+              </div>
+              <div class="code-row">
+                <span class="code-step-label">8音め</span>
+                <select id="chordStep8"></select>
+                <select id="octaveStep8"></select>
+              </div>
             </div>
             <small>各音に対して、コード名で和声を選べます。キーは固定で、コードだけが進行します。</small>
           </div>
@@ -452,6 +578,25 @@
             <div class="value-row">
               <strong id="tempoValue">167 BPM</strong>
             </div>
+          </div>
+
+          <div class="field">
+            <label>リズム</label>
+            <div class="radio-group" role="radiogroup" aria-label="リズム">
+              <label class="radio-option" for="rhythmStraight">
+                <input id="rhythmStraight" type="radio" name="rhythm" value="straight" checked>
+                <span>等間隔 (4分音符)</span>
+              </label>
+              <label class="radio-option" for="rhythmSwing1">
+                <input id="rhythmSwing1" type="radio" name="rhythm" value="swing1">
+                <span>スイング1</span>
+              </label>
+              <label class="radio-option" for="rhythmSwing2">
+                <input id="rhythmSwing2" type="radio" name="rhythm" value="swing2">
+                <span>スイング2</span>
+              </label>
+            </div>
+            <small>テンポを基準に、各音の間隔だけを切り替えます。</small>
           </div>
 
           <div class="field">
@@ -525,6 +670,10 @@
             <span id="tempoSummary" class="value">167 BPM</span>
           </div>
           <div class="mini">
+            <span class="label">リズム</span>
+            <span id="rhythmSummary" class="value">等間隔</span>
+          </div>
+          <div class="mini">
             <span class="label">音量</span>
             <span id="volumeSummary" class="value">74%</span>
           </div>
@@ -544,6 +693,9 @@
   </main>
 
   <div class="floating-play">
+    <div class="floating-header">
+      <button id="panelToggle" class="secondary panel-toggle" type="button" aria-label="再生パネルをたたむ" aria-expanded="true">▣</button>
+    </div>
     <div class="floating-controls">
     <button id="playButton" class="primary" type="button">再生</button>
     <label class="loop-toggle" for="loopToggle">
@@ -722,6 +874,63 @@
           { ratio: 3.0, gain: 0.04, mainWave: "sine", sideWave: "sine", spread: 4.0, pan: 0.08 }
         ]
       },
+      edmpluck: {
+        label: "EDM Pluck Chime",
+        description: "EDMのプラック感を取り入れた、立ち上がりの速いシンセチャイムです。短く締まった減衰と明るい倍音で、コードの輪郭をくっきり聴かせます。",
+        attack: 0.006, attackLift: 1.055, peak: 0.82, sustain: 0.0001,
+        decay1: 0.16, decay2: 0.72, release: 0.68,
+        bodyLowpass: 6200, bodyLowpassEnd: 1550, bodyHighpass: 260, bodyQ: 0.82,
+        shaperDrive: 1.22, dryLevel: 1,
+        shimmerRatio: 4.5, shimmerWave: "triangle", shimmerGain: 0.08, shimmerDecay: 0.28, shimmerDetune: 6,
+        transientWave: "triangle", attackNoise: 0.012, attackTone: 3550, attackQ: 1.28, attackGain: 0.042,
+        echoMix: 0.16, echoTime: 0.082, echoFeedback: 0.16, preDelay: 0.014,
+        reverbLowpass: 3600, reverbHighpass: 280, presence: 1.7,
+        tapGains: [0.05, 0.032, 0.02], tapRatios: [0.66, 1.02, 1.38], stereoWidth: 0.18,
+        partials: [
+          { ratio: 1.0, gain: 0.42, mainWave: "square", sideWave: "triangle", spread: 8.4, pan: -0.08 },
+          { ratio: 2.0, gain: 0.24, mainWave: "triangle", sideWave: "square", spread: 10.2, pan: 0.02 },
+          { ratio: 3.0, gain: 0.12, mainWave: "sine", sideWave: "triangle", spread: 11.4, pan: 0.1 },
+          { ratio: 4.5, gain: 0.05, mainWave: "sine", sideWave: "sine", spread: 8.8, pan: 0.15 }
+        ]
+      },
+      festival: {
+        label: "Festival Lead Chime",
+        description: "フェス系リードシンセのきらびやかさを案内音に寄せた音色です。広めのデチューンと明るいアタックで、派手すぎず印象に残る方向を狙っています。",
+        attack: 0.008, attackLift: 1.048, peak: 0.84, sustain: 0.00012,
+        decay1: 0.24, decay2: 0.96, release: 0.9,
+        bodyLowpass: 6900, bodyLowpassEnd: 1850, bodyHighpass: 240, bodyQ: 0.74,
+        shaperDrive: 1.26, dryLevel: 1,
+        shimmerRatio: 4.08, shimmerWave: "sawtooth", shimmerGain: 0.065, shimmerDecay: 0.44, shimmerDetune: 7,
+        transientWave: "triangle", attackNoise: 0.014, attackTone: 3400, attackQ: 1.22, attackGain: 0.038,
+        echoMix: 0.22, echoTime: 0.094, echoFeedback: 0.24, preDelay: 0.02,
+        reverbLowpass: 3900, reverbHighpass: 260, presence: 1.8,
+        tapGains: [0.072, 0.05, 0.03], tapRatios: [0.7, 1.08, 1.46], stereoWidth: 0.22,
+        partials: [
+          { ratio: 1.0, gain: 0.38, mainWave: "sawtooth", sideWave: "triangle", spread: 12.0, pan: -0.1 },
+          { ratio: 2.0, gain: 0.26, mainWave: "triangle", sideWave: "sawtooth", spread: 13.4, pan: 0.02 },
+          { ratio: 3.0, gain: 0.14, mainWave: "sine", sideWave: "triangle", spread: 14.2, pan: 0.09 },
+          { ratio: 4.2, gain: 0.06, mainWave: "sine", sideWave: "sawtooth", spread: 10.2, pan: 0.16 }
+        ]
+      },
+      sidechainglass: {
+        label: "Sidechain Glass",
+        description: "ガラス質のベル感にダンス系シンセの抜けを加えた音色です。透明感を残しながら、現代的なシンセっぽさを少し前に出しています。",
+        attack: 0.01, attackLift: 1.038, peak: 0.8, sustain: 0.00013,
+        decay1: 0.22, decay2: 1.08, release: 1.02,
+        bodyLowpass: 6400, bodyLowpassEnd: 1750, bodyHighpass: 230, bodyQ: 0.68,
+        shaperDrive: 1.18, dryLevel: 1,
+        shimmerRatio: 5.0, shimmerWave: "sine", shimmerGain: 0.092, shimmerDecay: 0.48, shimmerDetune: 4,
+        transientWave: "triangle", attackNoise: 0.013, attackTone: 3480, attackQ: 1.16, attackGain: 0.036,
+        echoMix: 0.24, echoTime: 0.088, echoFeedback: 0.22, preDelay: 0.018,
+        reverbLowpass: 4000, reverbHighpass: 250, presence: 1.95,
+        tapGains: [0.078, 0.054, 0.032], tapRatios: [0.68, 1.06, 1.42], stereoWidth: 0.18,
+        partials: [
+          { ratio: 1.0, gain: 0.4, mainWave: "triangle", sideWave: "sine", spread: 7.4, pan: -0.08 },
+          { ratio: 2.0, gain: 0.25, mainWave: "sine", sideWave: "triangle", spread: 8.6, pan: 0.02 },
+          { ratio: 3.0, gain: 0.16, mainWave: "square", sideWave: "sine", spread: 9.2, pan: 0.1 },
+          { ratio: 5.2, gain: 0.05, mainWave: "sine", sideWave: "sine", spread: 7.0, pan: 0.15 }
+        ]
+      },
       bright: {
         label: "Bright Synth Chime",
         description: "やや華やかで存在感のある音です。明るい倍音と少し広いデチューンで、最初の一音に印象を残しながらも品位を保ちます。",
@@ -744,9 +953,20 @@
     };
 
     const PATTERNS = {
+      "1tone": { label: "1点", degrees: [0] },
       "2tone": { label: "2点", degrees: [0, 4] },
       "3tone": { label: "3点", degrees: [0, 2, 4] },
-      "4tone": { label: "4点", degrees: [0, 1, 3, 5] }
+      "4tone": { label: "4点", degrees: [0, 1, 3, 5] },
+      "5tone": { label: "5点", degrees: [0, 1, 2, 3, 5] },
+      "6tone": { label: "6点", degrees: [0, 1, 2, 3, 4, 5] },
+      "7tone": { label: "7点", degrees: [0, 1, 2, 3, 4, 5, 6] },
+      "8tone": { label: "8点", degrees: [0, 1, 2, 3, 4, 5, 6, 7] }
+    };
+
+    const RHYTHMS = {
+      straight: { label: "等間隔", intervalRatios: [1, 1, 1, 1] },
+      swing1: { label: "スイング1", intervalRatios: [1.5, 0.5, 1.5, 0.5] },
+      swing2: { label: "スイング2", intervalRatios: [0.5, 1.5, 0.5, 1.5] }
     };
 
     const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
@@ -776,68 +996,104 @@
     };
 
     const DEFAULT_PROGRESSIONS = {
-      "2tone": ["C", "Em", "C", "C"],
+      "1tone": ["C"],
+      "2tone": ["C", "Em"],
       "3tone": ["C", "Em", "Gsus4"],
-      "4tone": ["C", "Em", "Gsus4", "C"]
+      "4tone": ["C", "Em", "Gsus4", "C"],
+      "5tone": ["C", "Em", "Gsus4", "C", "G/B"],
+      "6tone": ["C", "Em", "Gsus4", "C", "G/B", "C"],
+      "7tone": ["C", "Em", "Gsus4", "C", "G/B", "Am", "C"],
+      "8tone": ["C", "Em", "Gsus4", "C", "G/B", "Am", "F", "C"]
     };
 
     const PROGRESSION_PRESETS = {
       default: {
         label: "デフォルト",
         progressions: {
+          "1tone": { chords: ["C"], octaves: [0] },
           "2tone": { chords: ["C", "Em", "C", "C"], octaves: [0, 0, 0, 0] },
           "3tone": { chords: ["C", "Em", "Gsus4", "C"], octaves: [0, 0, 0, 0] },
-          "4tone": { chords: ["C", "Em", "Gsus4", "C"], octaves: [0, 0, 0, 0] }
+          "4tone": { chords: ["C", "Em", "Gsus4", "C"], octaves: [0, 0, 0, 0] },
+          "5tone": { chords: ["C", "Em", "Gsus4", "C", "G/B"], octaves: [0, 0, 0, 0, 0] },
+          "6tone": { chords: ["C", "Em", "Gsus4", "C", "G/B", "C"], octaves: [0, 0, 0, 0, 0, 0] },
+          "7tone": { chords: ["C", "Em", "Gsus4", "C", "G/B", "Am", "C"], octaves: [0, 0, 0, 0, 0, 0, 0] },
+          "8tone": { chords: ["C", "Em", "Gsus4", "C", "G/B", "Am", "F", "C"], octaves: [0, 0, 0, 0, 0, 0, 0, 0] }
         }
       },
       greeting: {
         label: "あいさつ",
         progressions: {
+          "1tone": { chords: ["C"], octaves: [0] },
           "2tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] },
           "3tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] },
-          "4tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] }
+          "4tone": { chords: ["C", "G/B", "C", "C"], octaves: [0, -1, 0, 0] },
+          "5tone": { chords: ["C", "G/B", "C", "C", "G/B"], octaves: [0, -1, 0, 0, -1] },
+          "6tone": { chords: ["C", "G/B", "C", "C", "G/B", "C"], octaves: [0, -1, 0, 0, -1, 0] },
+          "7tone": { chords: ["C", "G/B", "C", "C", "G/B", "C", "G/B"], octaves: [0, -1, 0, 0, -1, 0, -1] },
+          "8tone": { chords: ["C", "G/B", "C", "C", "G/B", "C", "G/B", "C"], octaves: [0, -1, 0, 0, -1, 0, -1, 0] }
         }
       },
       airport: {
         label: "飛行場",
         progressions: {
+          "1tone": { chords: ["G"], octaves: [0] },
           "2tone": { chords: ["G", "C", "C", "C"], octaves: [0, 0, 0, 0] },
           "3tone": { chords: ["G", "Em", "C", "C"], octaves: [0, 0, 0, 0] },
-          "4tone": { chords: ["G", "Em", "G", "C"], octaves: [0, 0, 0, 1] }
+          "4tone": { chords: ["G", "Em", "G", "C"], octaves: [0, 0, 0, 1] },
+          "5tone": { chords: ["G", "Em", "G", "C", "G"], octaves: [0, 0, 0, 1, 0] },
+          "6tone": { chords: ["G", "Em", "G", "C", "G", "C"], octaves: [0, 0, 0, 1, 0, 1] },
+          "7tone": { chords: ["G", "Em", "G", "C", "G", "Em", "C"], octaves: [0, 0, 0, 1, 0, 0, 1] },
+          "8tone": { chords: ["G", "Em", "G", "C", "G", "Em", "G", "C"], octaves: [0, 0, 0, 1, 0, 0, 0, 1] }
         }
       },
       canon: {
         label: "カノン",
         progressions: {
-          "2tone": { chords: ["C", "G", "C", "C"], octaves: [0, 0, 0, 0] },
-          "3tone": { chords: ["C", "G", "Am", "C"], octaves: [0, 0, 0, 0] },
-          "4tone": { chords: ["C", "G", "Am", "Em"], octaves: [0, 0, 0, 0] }
+          "1tone": { chords: ["C"], octaves: [0] },
+          "2tone": { chords: ["C", "G"], octaves: [0, 0] },
+          "3tone": { chords: ["C", "G", "Am"], octaves: [0, 0, 0] },
+          "4tone": { chords: ["C", "G", "Am", "Em"], octaves: [0, 0, 0, 0] },
+          "5tone": { chords: ["C", "G", "Am", "Em", "F"], octaves: [0, 0, 0, 0, 0] },
+          "6tone": { chords: ["C", "G", "Am", "Em", "F", "C"], octaves: [0, 0, 0, 0, 0, 0] },
+          "7tone": { chords: ["C", "G", "Am", "Em", "F", "C", "F"], octaves: [0, 0, 0, 0, 0, 0, 0] },
+          "8tone": { chords: ["C", "G", "Am", "Em", "F", "C", "F", "G"], octaves: [0, 0, 0, 0, 0, 0, 0, 0] }
         }
       },
       royal: {
         label: "王道",
         progressions: {
+          "1tone": { chords: ["F"], octaves: [0] },
           "2tone": { chords: ["F", "G", "C", "C"], octaves: [0, 0, 0, 0] },
           "3tone": { chords: ["F", "G", "Em", "C"], octaves: [0, 0, 0, 0] },
-          "4tone": { chords: ["F", "G", "Em", "Am"], octaves: [0, 0, 0, 0] }
+          "4tone": { chords: ["F", "G", "Em", "Am"], octaves: [0, 0, 0, 0] },
+          "5tone": { chords: ["F", "G", "Em", "Am", "F"], octaves: [0, 0, 0, 0, 0] },
+          "6tone": { chords: ["F", "G", "Em", "Am", "F", "G"], octaves: [0, 0, 0, 0, 0, 0] },
+          "7tone": { chords: ["F", "G", "Em", "Am", "F", "G", "C"], octaves: [0, 0, 0, 0, 0, 0, 0] },
+          "8tone": { chords: ["F", "G", "Em", "Am", "F", "G", "C", "C"], octaves: [0, 0, 0, 0, 0, 0, 0, 0] }
         }
       },
       komuro: {
         label: "小室",
         progressions: {
+          "1tone": { chords: ["Am"], octaves: [0] },
           "2tone": { chords: ["Am", "F", "C", "C"], octaves: [0, 0, 0, 0] },
           "3tone": { chords: ["Am", "F", "G", "C"], octaves: [0, 0, 0, 0] },
-          "4tone": { chords: ["Am", "F", "G", "C"], octaves: [0, 0, 0, 0] }
+          "4tone": { chords: ["Am", "F", "G", "C"], octaves: [0, 0, 0, 0] },
+          "5tone": { chords: ["Am", "F", "G", "C", "Am"], octaves: [0, 0, 0, 0, 0] },
+          "6tone": { chords: ["Am", "F", "G", "C", "Am", "F"], octaves: [0, 0, 0, 0, 0, 0] },
+          "7tone": { chords: ["Am", "F", "G", "C", "Am", "F", "G"], octaves: [0, 0, 0, 0, 0, 0, 0] },
+          "8tone": { chords: ["Am", "F", "G", "C", "Am", "F", "G", "C"], octaves: [0, 0, 0, 0, 0, 0, 0, 0] }
         }
       }
     };
 
     const ui = {
-      pattern: document.getElementById("pattern"),
+      patternOptions: Array.from(document.querySelectorAll('input[name="pattern"]')),
       preset: document.getElementById("preset"),
       progressionPreset: document.getElementById("progressionPreset"),
       globalOctave: document.getElementById("globalOctave"),
       voiceMode: document.getElementById("voiceMode"),
+      rhythmOptions: Array.from(document.querySelectorAll('input[name="rhythm"]')),
       chordStep1: document.getElementById("chordStep1"),
       octaveStep1: document.getElementById("octaveStep1"),
       chordStep2: document.getElementById("chordStep2"),
@@ -846,12 +1102,21 @@
       octaveStep3: document.getElementById("octaveStep3"),
       chordStep4: document.getElementById("chordStep4"),
       octaveStep4: document.getElementById("octaveStep4"),
+      chordStep5: document.getElementById("chordStep5"),
+      octaveStep5: document.getElementById("octaveStep5"),
+      chordStep6: document.getElementById("chordStep6"),
+      octaveStep6: document.getElementById("octaveStep6"),
+      chordStep7: document.getElementById("chordStep7"),
+      octaveStep7: document.getElementById("octaveStep7"),
+      chordStep8: document.getElementById("chordStep8"),
+      octaveStep8: document.getElementById("octaveStep8"),
       pitch: document.getElementById("pitch"),
       tempo: document.getElementById("tempo"),
       volume: document.getElementById("volume"),
       reverb: document.getElementById("reverb"),
       lowEq: document.getElementById("lowEq"),
       highEq: document.getElementById("highEq"),
+      panelToggle: document.getElementById("panelToggle"),
       playButton: document.getElementById("playButton"),
       loopToggle: document.getElementById("loopToggle"),
       randomButton: document.getElementById("randomButton"),
@@ -870,11 +1135,21 @@
       voiceSummary: document.getElementById("voiceSummary"),
       pitchSummary: document.getElementById("pitchSummary"),
       tempoSummary: document.getElementById("tempoSummary"),
+      rhythmSummary: document.getElementById("rhythmSummary"),
       volumeSummary: document.getElementById("volumeSummary"),
       reverbSummary: document.getElementById("reverbSummary"),
       eqSummary: document.getElementById("eqSummary"),
       status: document.getElementById("status")
     };
+
+    const chordStepControls = [
+      ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4,
+      ui.chordStep5, ui.chordStep6, ui.chordStep7, ui.chordStep8
+    ];
+    const octaveStepControls = [
+      ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4,
+      ui.octaveStep5, ui.octaveStep6, ui.octaveStep7, ui.octaveStep8
+    ];
 
     let audioContext = null;
     let loopTimeoutId = null;
@@ -966,23 +1241,21 @@
       panel.addEventListener("pointercancel", finishDrag);
     }
 
+    function setFloatingPanelCollapsed(collapsed) {
+      ui.floatingPlay.classList.toggle("collapsed", collapsed);
+      ui.panelToggle.textContent = collapsed ? "◰" : "▣";
+      ui.panelToggle.setAttribute("aria-expanded", String(!collapsed));
+      ui.panelToggle.setAttribute("aria-label", collapsed ? "再生パネルを開く" : "再生パネルをたたむ");
+    }
+
     function getSettings() {
       return {
-        patternKey: ui.pattern.value,
+        patternKey: ui.patternOptions.find((input) => input.checked)?.value || "3tone",
         presetKey: ui.preset.value,
         voiceMode: Number(ui.voiceMode.value),
-        chordSteps: [
-          ui.chordStep1.value,
-          ui.chordStep2.value,
-          ui.chordStep3.value,
-          ui.chordStep4.value
-        ],
-        octaveSteps: [
-          Number(ui.octaveStep1.value),
-          Number(ui.octaveStep2.value),
-          Number(ui.octaveStep3.value),
-          Number(ui.octaveStep4.value)
-        ],
+        rhythmKey: ui.rhythmOptions.find((input) => input.checked)?.value || "straight",
+        chordSteps: chordStepControls.map((select) => select.value),
+        octaveSteps: octaveStepControls.map((select) => Number(select.value)),
         globalOctave: Number(ui.globalOctave.value),
         baseFrequency: Number(ui.pitch.value),
         tempoSliderValue: Number(ui.tempo.value),
@@ -1060,11 +1333,25 @@
       }, Math.max(50, Math.round(durationSeconds * 1000)));
     }
 
+    function buildStepOffsets(settings) {
+      const patternLength = PATTERNS[settings.patternKey].degrees.length;
+      const rhythm = RHYTHMS[settings.rhythmKey] || RHYTHMS.straight;
+      const offsets = [0];
+
+      for (let index = 1; index < patternLength; index += 1) {
+        const ratio = rhythm.intervalRatios[(index - 1) % rhythm.intervalRatios.length] || 1;
+        offsets.push(offsets[index - 1] + (settings.spacingMs * ratio) / 1000);
+      }
+
+      return offsets;
+    }
+
     function updateUi() {
       updateSelectableSteps();
       const settings = getSettings();
       const preset = PRESETS[settings.presetKey];
       const pattern = PATTERNS[settings.patternKey];
+      const rhythm = RHYTHMS[settings.rhythmKey] || RHYTHMS.straight;
       const volumePercent = Math.round(settings.masterVolume * 100);
       const reverbPercent = Math.round(settings.reverbAmount * 100);
       const tempoBpm = spacingMsToTempoBpm(settings.spacingMs);
@@ -1095,6 +1382,7 @@
       ui.voiceSummary.textContent = voiceLabel;
       ui.pitchSummary.textContent = settings.baseFrequency + " Hz";
       ui.tempoSummary.textContent = tempoBpm + " BPM";
+      ui.rhythmSummary.textContent = rhythm.label;
       ui.volumeSummary.textContent = volumePercent + "%";
       ui.reverbSummary.textContent = reverbPercent + "%";
       ui.eqSummary.textContent = eqSummary;
@@ -1102,12 +1390,12 @@
 
     function randomizeProgression() {
       const chordKeys = Object.keys(CHORD_LIBRARY);
-      const patternLength = PATTERNS[ui.pattern.value].degrees.length;
-      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
+      const patternKey = ui.patternOptions.find((input) => input.checked)?.value || "3tone";
+      const patternLength = PATTERNS[patternKey].degrees.length;
 
       for (let index = 0; index < patternLength; index += 1) {
         const choice = chordKeys[Math.floor(Math.random() * chordKeys.length)];
-        chordSteps[index].value = choice;
+        chordStepControls[index].value = choice;
       }
 
       updateUi();
@@ -1162,10 +1450,10 @@
         .map((octave) => `<option value="${octave}">${octave > 0 ? "+" : ""}${octave} oct</option>`)
         .join("");
 
-      [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4].forEach((select) => {
+      chordStepControls.forEach((select) => {
         select.innerHTML = optionsHtml;
       });
-      [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4].forEach((select) => {
+      octaveStepControls.forEach((select) => {
         select.innerHTML = octaveHtml;
         select.value = "0";
       });
@@ -1190,18 +1478,17 @@
 
     function applyProgressionPreset(presetKey) {
       const preset = PROGRESSION_PRESETS[presetKey] || PROGRESSION_PRESETS.default;
-      const progression = preset.progressions[ui.pattern.value] || {
-        chords: DEFAULT_PROGRESSIONS[ui.pattern.value],
-        octaves: [0, 0, 0, 0]
+      const patternKey = ui.patternOptions.find((input) => input.checked)?.value || "3tone";
+      const progression = preset.progressions[patternKey] || {
+        chords: DEFAULT_PROGRESSIONS[patternKey],
+        octaves: Array.from({ length: PATTERNS[patternKey].degrees.length }, () => 0)
       };
-      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
-      const octaveSteps = [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4];
 
-      chordSteps.forEach((select, index) => {
+      chordStepControls.forEach((select, index) => {
         select.value = progression.chords[index] || "";
       });
 
-      octaveSteps.forEach((select, index) => {
+      octaveStepControls.forEach((select, index) => {
         select.value = String(progression.octaves[index] || 0);
       });
 
@@ -1211,11 +1498,10 @@
     }
 
     function updateSelectableSteps() {
-      const patternLength = PATTERNS[ui.pattern.value].degrees.length;
-      const chordSteps = [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4];
-      const octaveSteps = [ui.octaveStep1, ui.octaveStep2, ui.octaveStep3, ui.octaveStep4];
+      const patternKey = ui.patternOptions.find((input) => input.checked)?.value || "3tone";
+      const patternLength = PATTERNS[patternKey].degrees.length;
 
-      chordSteps.forEach((select, index) => {
+      chordStepControls.forEach((select, index) => {
         const enabled = index < patternLength;
         select.disabled = !enabled;
         if (!enabled) {
@@ -1228,7 +1514,7 @@
         }
       });
 
-      octaveSteps.forEach((select, index) => {
+      octaveStepControls.forEach((select, index) => {
         const enabled = index < patternLength;
         select.disabled = !enabled;
         if (!enabled) {
@@ -1539,16 +1825,16 @@
     function renderChimeToContext(ctx, settings) {
       const preset = PRESETS[settings.presetKey];
       const notePlan = buildNotePlan(settings);
-      const spacing = settings.spacingMs / 1000;
+      const stepOffsets = buildStepOffsets(settings);
       const noteDuration = preset.attack + preset.decay1 + preset.decay2 + preset.release + 0.08;
-      const totalDuration = spacing * (notePlan.length - 1) + noteDuration + 0.42;
+      const totalDuration = (stepOffsets[stepOffsets.length - 1] || 0) + noteDuration + 0.42;
       const baseTime = ctx.currentTime + 0.03;
       const masterInput = createMasterChain(ctx, settings);
       const reverbSend = createReverbNetwork(ctx, masterInput, preset, totalDuration, baseTime, settings.reverbAmount, settings);
       const noiseBuffer = createAttackNoiseBuffer(ctx);
 
       notePlan.forEach((notes, index) => {
-        const noteStart = baseTime + 0.045 + spacing * index;
+        const noteStart = baseTime + 0.045 + (stepOffsets[index] || 0);
         const stepGain = index === 0 ? 0.96 : index === notePlan.length - 1 ? 0.9 : 0.84;
 
         notes.forEach((note) => {
@@ -1702,8 +1988,8 @@
     async function downloadWav() {
       const settings = getSettings();
       const preset = PRESETS[settings.presetKey];
-      const notePlan = buildNotePlan(settings);
-      const roughDuration = (settings.spacingMs / 1000) * (notePlan.length - 1)
+      const stepOffsets = buildStepOffsets(settings);
+      const roughDuration = (stepOffsets[stepOffsets.length - 1] || 0)
         + preset.attack + preset.decay1 + preset.decay2 + preset.release + 1.8;
 
       ui.downloadButton.disabled = true;
@@ -1735,7 +2021,7 @@
     }
 
     ["input", "change"].forEach((eventName) => {
-      ui.pattern.addEventListener(eventName, updateUi);
+      ui.patternOptions.forEach((input) => input.addEventListener(eventName, updateUi));
       ui.preset.addEventListener(eventName, updateUi);
       ui.progressionPreset.addEventListener(eventName, () => {
         applyProgressionPreset(ui.progressionPreset.value);
@@ -1743,14 +2029,9 @@
       });
       ui.globalOctave.addEventListener(eventName, updateUi);
       ui.voiceMode.addEventListener(eventName, updateUi);
-      ui.chordStep1.addEventListener(eventName, updateUi);
-      ui.octaveStep1.addEventListener(eventName, updateUi);
-      ui.chordStep2.addEventListener(eventName, updateUi);
-      ui.octaveStep2.addEventListener(eventName, updateUi);
-      ui.chordStep3.addEventListener(eventName, updateUi);
-      ui.octaveStep3.addEventListener(eventName, updateUi);
-      ui.chordStep4.addEventListener(eventName, updateUi);
-      ui.octaveStep4.addEventListener(eventName, updateUi);
+      ui.rhythmOptions.forEach((input) => input.addEventListener(eventName, updateUi));
+      chordStepControls.forEach((select) => select.addEventListener(eventName, updateUi));
+      octaveStepControls.forEach((select) => select.addEventListener(eventName, updateUi));
       ui.pitch.addEventListener(eventName, updateUi);
       ui.tempo.addEventListener(eventName, updateUi);
       ui.volume.addEventListener(eventName, updateUi);
@@ -1760,8 +2041,11 @@
     });
 
     ui.playButton.addEventListener("click", playChime);
+    ui.panelToggle.addEventListener("click", () => {
+      setFloatingPanelCollapsed(!ui.floatingPlay.classList.contains("collapsed"));
+    });
     ui.preset.addEventListener("change", playPresetPreview);
-    [ui.chordStep1, ui.chordStep2, ui.chordStep3, ui.chordStep4].forEach((select, index) => {
+    chordStepControls.forEach((select, index) => {
       select.addEventListener("change", () => {
         playChordStepPreview(index);
       });
